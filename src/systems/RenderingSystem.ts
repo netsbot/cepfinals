@@ -20,7 +20,8 @@ export function RenderingSystem(
   cave: CaveGenerator,
   stats: RenderStats
 ): void {
-  p.background(5, 7, 12); // Deep space void background
+  p.background(0, 0, 0); // Pure black void
+  p.noStroke(); // No stroke outlines on tile edges!
 
   // 1. Query Fog of War component
   let fog: FogOfWarComponent | null = null;
@@ -28,118 +29,99 @@ export function RenderingSystem(
     fog = f;
   });
 
-  // 2. Draw Cave Base Map with High Contrast Styling
+  const fComp = fog ? (fog as FogOfWarComponent) : null;
+
+  // 2. Draw Cave Base Map with Flat High-Contrast Colors (No Outlines)
   for (let x = 0; x < cave.cols; x++) {
     for (let y = 0; y < cave.rows; y++) {
       const isWall = cave.grid[x]![y] === 1;
       const posX = x * cave.tileSize;
       const posY = y * cave.tileSize;
+      const fogState = fComp ? fComp.get(x, y) : 2; // 0: unexplored, 1: explored, 2: visible
 
-      if (isWall) {
-        // High contrast Indigo Wall blocks with bright border lines
-        p.fill(24, 20, 50);
-        p.stroke(67, 56, 202);
-        p.strokeWeight(1.5);
-        p.rect(posX, posY, cave.tileSize, cave.tileSize, 2);
+      if (fogState === 0) {
+        // UNEXPLORED: Pitch black
+        p.fill(0, 0, 0);
+        p.rect(posX, posY, cave.tileSize, cave.tileSize);
+      } else if (fogState === 1) {
+        // EXPLORED (Memory Fog): Muted dim colors
+        if (isWall) {
+          p.fill(46, 16, 101); // Dark muted purple wall
+        } else {
+          p.fill(30, 41, 59); // Dark muted slate floor
+        }
+        p.rect(posX, posY, cave.tileSize, cave.tileSize);
+
+        // Dark dimming overlay over memory area
+        p.fill(0, 0, 0, 150);
+        p.rect(posX, posY, cave.tileSize, cave.tileSize);
       } else {
-        // Distinct slate floor with crisp grid
-        p.fill(15, 23, 42);
-        p.stroke(30, 41, 59, 120);
-        p.strokeWeight(1);
+        // VISIBLE (Lit / No Fog): High contrast bright distinct colors!
+        if (isWall) {
+          p.fill(91, 33, 182); // Vibrant Electric Indigo Wall
+        } else {
+          p.fill(51, 65, 85); // Bright Slate Floor
+        }
         p.rect(posX, posY, cave.tileSize, cave.tileSize);
       }
     }
   }
 
-  // 3. Draw Fog of War Shading Overlay
-  if (fog) {
-    const fComp = fog as FogOfWarComponent;
-    p.noStroke();
-    for (let x = 0; x < cave.cols; x++) {
-      for (let y = 0; y < cave.rows; y++) {
-        const state = fComp.get(x, y);
-        const posX = x * cave.tileSize;
-        const posY = y * cave.tileSize;
-
-        if (state === 0) {
-          // Unexplored: Pitch Black (Complete Darkness)
-          p.fill(0, 0, 0, 255);
-          p.rect(posX, posY, cave.tileSize, cave.tileSize);
-        } else if (state === 1) {
-          // Explored: Memory Fog (Cool Muted Tint with 80% opacity)
-          p.fill(5, 7, 12, 205);
-          p.rect(posX, posY, cave.tileSize, cave.tileSize);
-        }
-      }
-    }
-  }
-
-  // 4. Draw Bullets / Projectiles (High-luminance glowing yellow)
+  // 3. Draw Bullets / Projectiles (Only in visible tiles)
   world.query(Position, Projectile, Sprite).each((_e, pos, _proj, sprite) => {
-    if (fog) {
+    if (fComp) {
       const tx = Math.floor(pos.x / cave.tileSize);
       const ty = Math.floor(pos.y / cave.tileSize);
-      if (fog.get(tx, ty) !== 2) return; // Hide bullet in fog
+      if (fComp.get(tx, ty) !== 2) return; // Hide bullet in fog
     }
 
     p.push();
-    p.fill(255, 240, 102); // Electric yellow
-    p.stroke(255, 255, 255);
-    p.strokeWeight(1.5);
+    p.noStroke();
+    p.fill(250, 204, 21); // Solid Bright Yellow
     p.circle(pos.x, pos.y, sprite.size);
     p.pop();
   });
 
-  // 5. Draw Enemies ONLY if Visibility === "visible"
+  // 4. Draw Enemies (ONLY if Visibility === "visible")
   world.query(Position, Health, Sprite, DNA, Visibility, EnemyTag).each((_e, pos, health, sprite, dna, vis) => {
     if (vis.state !== "visible") return; // Hidden in fog of war!
 
     p.push();
     p.translate(pos.x, pos.y);
+    p.noStroke();
 
-    // Color derived from Aggression (Red) & Speed (Green/Yellow)
-    const r = p.map(dna.aggression, 0.1, 1.0, 180, 255);
-    const g = p.map(dna.speed, 1.0, 4.5, 40, 200);
-    p.fill(r, g, 40);
-    p.stroke(255, 80, 80);
-    p.strokeWeight(2);
+    // Color derived from Aggression (Red) & Speed (Yellow/Orange)
+    const r = p.map(dna.aggression, 0.1, 1.0, 200, 255);
+    const g = p.map(dna.speed, 1.0, 4.5, 60, 180);
+    p.fill(r, g, 30);
     p.circle(0, 0, sprite.size);
 
     // Health bar above enemy
     if (health.current < health.max) {
-      p.noStroke();
       p.fill(15, 23, 42);
-      p.rect(-12, -sprite.size / 2 - 8, 24, 5, 2);
+      p.rect(-12, -sprite.size / 2 - 8, 24, 4);
       p.fill(239, 68, 68);
       const hpWidth = p.map(health.current, 0, health.max, 0, 24);
-      p.rect(-12, -sprite.size / 2 - 8, Math.max(0, hpWidth), 5, 2);
+      p.rect(-12, -sprite.size / 2 - 8, Math.max(0, hpWidth), 4);
     }
     p.pop();
   });
 
-  // 6. Draw Player (Electric Neon Cyan)
+  // 5. Draw Player (Solid Electric Cyan)
   world.query(Position, Health, Sprite, PlayerTag).each((_e, pos, health, sprite) => {
     p.push();
     p.translate(pos.x, pos.y);
-
-    // Outer glow pulse ring
-    p.noFill();
-    p.stroke(0, 240, 255, 120);
-    p.strokeWeight(2);
-    p.circle(0, 0, sprite.size + 8);
+    p.noStroke();
 
     // Player body
-    p.fill(0, 240, 255);
-    p.stroke(255, 255, 255);
-    p.strokeWeight(2);
+    p.fill(6, 182, 212);
     p.circle(0, 0, sprite.size);
 
     // Direction pointer towards mouse
     const angle = Math.atan2(p.mouseY - pos.y, p.mouseX - pos.x);
     p.rotate(angle);
-    p.stroke(255);
-    p.strokeWeight(3);
-    p.line(0, 0, 16, 0);
+    p.fill(255, 255, 255);
+    p.triangle(6, -4, 16, 0, 6, 4);
 
     p.pop();
 
@@ -147,28 +129,25 @@ export function RenderingSystem(
     p.push();
     p.noStroke();
     p.fill(15, 23, 42);
-    p.rect(pos.x - 18, pos.y - sprite.size / 2 - 12, 36, 6, 2);
+    p.rect(pos.x - 18, pos.y - sprite.size / 2 - 12, 36, 5);
     p.fill(34, 197, 94);
     const hpWidth = p.map(health.current, 0, health.max, 0, 36);
-    p.rect(pos.x - 18, pos.y - sprite.size / 2 - 12, Math.max(0, hpWidth), 6, 2);
+    p.rect(pos.x - 18, pos.y - sprite.size / 2 - 12, Math.max(0, hpWidth), 5);
     p.pop();
   });
 
-  // 7. Draw HUD Overlay (High-contrast glassmorphism panel)
+  // 6. Draw HUD Overlay (High contrast text cards)
   p.push();
-  p.fill(255);
+  p.noStroke();
   p.textSize(14);
   p.textFont("monospace");
   p.textAlign(p.LEFT, p.TOP);
 
   // Top Left HUD
   p.fill(15, 23, 42, 230);
-  p.stroke(56, 189, 248, 120);
-  p.strokeWeight(1);
-  p.rect(10, 10, 200, 75, 6);
+  p.rect(10, 10, 200, 75, 4);
 
-  p.noStroke();
-  p.fill(56, 189, 248);
+  p.fill(6, 182, 212);
   p.text(`WAVE: ${stats.wave}`, 20, 18);
   p.fill(244, 63, 94);
   p.text(`ENEMIES: ${stats.enemiesRemaining}`, 20, 38);
@@ -177,12 +156,9 @@ export function RenderingSystem(
 
   // Top Right Genetic Algorithm Traits HUD
   p.fill(15, 23, 42, 230);
-  p.stroke(56, 189, 248, 120);
-  p.strokeWeight(1);
-  p.rect(p.width - 240, 10, 230, 115, 6);
+  p.rect(p.width - 240, 10, 230, 115, 4);
 
-  p.fill(56, 189, 248);
-  p.noStroke();
+  p.fill(6, 182, 212);
   p.text("DNA EVOLUTION TRAITS", p.width - 230, 18);
   p.fill(226, 232, 240);
   p.textSize(12);
