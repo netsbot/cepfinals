@@ -91,6 +91,7 @@ export class Weapon {
   public damage: number = 25;
   public cooldown: number = 0;
   public bulletSpeed: number = 8;
+  public lifesteal: number = 0.20; // 20% damage converted to player HP
 }
 
 export class Projectile {

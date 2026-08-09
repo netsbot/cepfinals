@@ -1,8 +1,21 @@
 import { World, Entity } from "../ecs";
-import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, DNA } from "../components";
+import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, DNA, Weapon } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator): void {
+  // Query Player entity components
+  let playerPos: Position | null = null;
+  let playerHealth: Health | null = null;
+  let playerWeapon: Weapon | null = null;
+  let playerCollider: Collider | null = null;
+
+  world.query(Position, Health, Collider, Weapon, PlayerTag).each((_e, pos, health, collider, weapon) => {
+    playerPos = pos;
+    playerHealth = health;
+    playerCollider = collider;
+    playerWeapon = weapon;
+  });
+
   // 1. Bullet Wall Despawn
   world.query(Position, Projectile).each((entity, pos) => {
     if (cave.isWall(pos.x, pos.y)) {
@@ -33,8 +46,15 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
           break;
         }
 
-        // Apply damage
+        // Apply damage & calculate Lifesteal
+        const damageDealt = Math.min(enemy.health.current, proj.damage);
         enemy.health.current -= proj.damage;
+
+        if (playerHealth && playerWeapon) {
+          const lifestealHeal = damageDealt * (playerWeapon as Weapon).lifesteal;
+          playerHealth.current = Math.min(playerHealth.max, playerHealth.current + lifestealHeal);
+        }
+
         world.despawn(bulletEntity);
 
         if (enemy.health.current <= 0) {
@@ -46,16 +66,6 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
   });
 
   // 3. Enemy Attacks vs Player
-  let playerPos: Position | null = null;
-  let playerHealth: Health | null = null;
-  let playerCollider: Collider | null = null;
-
-  world.query(Position, Health, Collider, PlayerTag).each((_e, pos, health, collider) => {
-    playerPos = pos;
-    playerHealth = health;
-    playerCollider = collider;
-  });
-
   if (playerPos && playerHealth && playerCollider) {
     world.query(Position, Collider, AI, Fitness, EnemyTag).each((_enemyEntity, pos, collider, ai, fitness) => {
       if (ai.state === "attack") {
