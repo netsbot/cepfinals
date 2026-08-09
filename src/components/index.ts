@@ -64,11 +64,12 @@ export class Fitness {
   }
 }
 
-export type AIState = "idle" | "chase" | "attack" | "flee" | "wander";
+export type AIState = "idle" | "chase" | "attack" | "flee" | "wander" | "investigate";
 
 export class AI {
   public state: AIState = "idle";
   public target: Entity | null = null;
+  public lastKnownPos: Position | null = null;
   public cooldownTimer: number = 0;
 }
 

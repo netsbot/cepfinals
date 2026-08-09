@@ -170,7 +170,7 @@ new p5((p: p5) => {
     // Run ECS Systems pipeline
     MovementSystem(game.world, dt, game.cave);
     SteeringSystem(game.world, dt, game.cave);
-    EnemyAISystem(game.world, dt);
+    EnemyAISystem(game.world, dt, game.cave);
     ShootingSystem(game.world, dt, {
       mouseX: p.mouseX,
       mouseY: p.mouseY,

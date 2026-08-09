@@ -156,4 +156,28 @@ export class CaveGenerator {
     }
     return this.grid[gridX]![gridY] === 1;
   }
+
+  public hasLineOfSight(x1: number, y1: number, x2: number, y2: number): boolean {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const dist = Math.hypot(dx, dy);
+    if (dist === 0) return true;
+
+    const step = 8; // Raycast step size in pixels
+    const steps = Math.floor(dist / step);
+    const stepX = (dx / dist) * step;
+    const stepY = (dy / dist) * step;
+
+    let currX = x1;
+    let currY = y1;
+
+    for (let i = 0; i < steps; i++) {
+      currX += stepX;
+      currY += stepY;
+      if (this.isWall(currX, currY)) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
