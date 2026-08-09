@@ -1,0 +1,113 @@
+import { Entity } from "../ecs";
+
+export class Position {
+  constructor(public x: number = 0, public y: number = 0) {}
+}
+
+export class Velocity {
+  constructor(public vx: number = 0, public vy: number = 0) {}
+}
+
+export class Health {
+  constructor(public current: number = 100, public max: number = 100) {}
+}
+
+export class Collider {
+  constructor(public radius: number = 12, public isStatic: boolean = false) {}
+}
+
+export interface EnemyDNA {
+  speed: number;          // [1.0, 4.5]
+  maxHealth: number;      // [30, 150]
+  aggression: number;     // [0.1, 1.0]
+  visionRadius: number;   // [80, 300]
+  attackCooldown: number; // [20, 90] frames
+  dodgeChance: number;    // [0.0, 0.5]
+  healRate: number;       // [0.05, 0.35] HP per frame
+}
+
+export class DNA implements EnemyDNA {
+  public speed: number;
+  public maxHealth: number;
+  public aggression: number;
+  public visionRadius: number;
+  public attackCooldown: number;
+  public dodgeChance: number;
+  public healRate: number;
+
+  constructor(dna?: Partial<EnemyDNA>) {
+    this.speed = dna?.speed ?? (1.5 + Math.random() * 2.0);
+    this.maxHealth = dna?.maxHealth ?? Math.floor(40 + Math.random() * 60);
+    this.aggression = dna?.aggression ?? (0.3 + Math.random() * 0.6);
+    this.visionRadius = dna?.visionRadius ?? (100 + Math.random() * 150);
+    this.attackCooldown = dna?.attackCooldown ?? Math.floor(30 + Math.random() * 40);
+    this.dodgeChance = dna?.dodgeChance ?? Math.random() * 0.3;
+    this.healRate = dna?.healRate ?? (0.05 + Math.random() * 0.2);
+  }
+}
+
+export class Fitness {
+  public damageDealt: number = 0;
+  public timeSurvived: number = 0;
+  public attackCount: number = 0;
+  public distanceTraveled: number = 0;
+  public hpHealed: number = 0;
+
+  public computeScore(): number {
+    return (
+      this.damageDealt * 5.0 +
+      this.timeSurvived * 0.1 +
+      this.attackCount * 2.0 +
+      this.hpHealed * 1.5 +
+      this.distanceTraveled * 0.01
+    );
+  }
+}
+
+export type AIState = "idle" | "chase" | "attack" | "flee" | "wander";
+
+export class AI {
+  public state: AIState = "idle";
+  public target: Entity | null = null;
+  public cooldownTimer: number = 0;
+}
+
+export class Steering {
+  public maxSpeed: number = 2.5;
+  public maxForce: number = 0.15;
+  public seekWeight: number = 1.0;
+  public separationWeight: number = 1.5;
+  public avoidanceWeight: number = 2.0;
+  public wanderWeight: number = 0.5;
+  public wanderAngle: number = Math.random() * Math.PI * 2;
+
+  constructor(maxSpeed: number = 2.5) {
+    this.maxSpeed = maxSpeed;
+  }
+}
+
+export class Weapon {
+  public fireRate: number = 10; // frames between shots
+  public damage: number = 25;
+  public cooldown: number = 0;
+  public bulletSpeed: number = 8;
+}
+
+export class Projectile {
+  constructor(public damage: number = 25, public owner: Entity | null = null) {}
+}
+
+export class Lifetime {
+  constructor(public remaining: number = 180, public max: number = 180) {}
+}
+
+export class Sprite {
+  constructor(
+    public color: string = "#38bdf8",
+    public size: number = 16,
+    public shape: "circle" | "rect" | "triangle" = "circle"
+  ) {}
+}
+
+export class PlayerTag {}
+export class EnemyTag {}
