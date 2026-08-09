@@ -34,19 +34,6 @@ export function SteeringSystem(world: World, _dt: number, cave: CaveGenerator): 
           forceY += (desiredVy - vel.vy) * steering.seekWeight;
         }
       }
-    } else if (ai.state === "investigate" && ai.lastKnownPos !== null) {
-      // Navigate to last known player location
-      const dx = ai.lastKnownPos.x - pos.x;
-      const dy = ai.lastKnownPos.y - pos.y;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist > 0) {
-        const desiredVx = (dx / dist) * steering.maxSpeed;
-        const desiredVy = (dy / dist) * steering.maxSpeed;
-
-        forceX += (desiredVx - vel.vx) * steering.seekWeight;
-        forceY += (desiredVy - vel.vy) * steering.seekWeight;
-      }
     }
 
     // 2. Wander behaviour

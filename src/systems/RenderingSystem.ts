@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { World } from "../ecs";
-import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile } from "../components";
+import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export interface RenderStats {
@@ -22,7 +22,7 @@ export function RenderingSystem(
 ): void {
   p.background(11, 13, 18);
 
-  // 1. Draw Cave Map
+  // 1. Draw Cave Base Map
   p.noStroke();
   for (let x = 0; x < cave.cols; x++) {
     for (let y = 0; y < cave.rows; y++) {
@@ -36,15 +36,29 @@ export function RenderingSystem(
     }
   }
 
-  // 2. Draw Bullets / Projectiles
+  // 2. Query Fog of War component
+  let fog: FogOfWarComponent | null = null;
+  world.query(FogOfWarComponent, FogTag).each((_e, f) => {
+    fog = f;
+  });
+
+  // 3. Draw Bullets / Projectiles (if inside visible tile)
   world.query(Position, Projectile, Sprite).each((_e, pos, _proj, sprite) => {
+    if (fog) {
+      const tx = Math.floor(pos.x / cave.tileSize);
+      const ty = Math.floor(pos.y / cave.tileSize);
+      if (fog.get(tx, ty) !== 2) return; // Hide bullet in fog
+    }
+
     p.fill(sprite.color);
     p.noStroke();
     p.circle(pos.x, pos.y, sprite.size);
   });
 
-  // 3. Draw Enemies with traits based on DNA
-  world.query(Position, Health, Sprite, DNA, EnemyTag).each((_e, pos, health, sprite, dna) => {
+  // 4. Draw Enemies ONLY if Visibility === "visible"
+  world.query(Position, Health, Sprite, DNA, Visibility, EnemyTag).each((_e, pos, health, sprite, dna, vis) => {
+    if (vis.state !== "visible") return; // Hidden in fog of war!
+
     p.push();
     p.translate(pos.x, pos.y);
 
@@ -67,6 +81,26 @@ export function RenderingSystem(
     }
     p.pop();
   });
+
+  // 5. Draw Fog of War Shading Overlay
+  if (fog) {
+    const fComp = fog as FogOfWarComponent;
+    p.noStroke();
+    for (let x = 0; x < cave.cols; x++) {
+      for (let y = 0; y < cave.rows; y++) {
+        const state = fComp.get(x, y);
+        if (state === 0) {
+          // Unexplored: Pitch Black
+          p.fill(11, 13, 18, 255);
+          p.rect(x * cave.tileSize, y * cave.tileSize, cave.tileSize, cave.tileSize);
+        } else if (state === 1) {
+          // Explored: Memory Fog
+          p.fill(11, 13, 18, 170);
+          p.rect(x * cave.tileSize, y * cave.tileSize, cave.tileSize, cave.tileSize);
+        }
+      }
+    }
+  }
 
   // 4. Draw Player
   world.query(Position, Health, Sprite, PlayerTag).each((_e, pos, health, sprite) => {

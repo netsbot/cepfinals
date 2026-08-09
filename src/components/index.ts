@@ -64,12 +64,11 @@ export class Fitness {
   }
 }
 
-export type AIState = "idle" | "chase" | "attack" | "flee" | "wander" | "investigate";
+export type AIState = "idle" | "chase" | "attack" | "flee" | "wander";
 
 export class AI {
   public state: AIState = "idle";
   public target: Entity | null = null;
-  public lastKnownPos: Position | null = null;
   public cooldownTimer: number = 0;
 }
 
@@ -110,5 +109,35 @@ export class Sprite {
   ) {}
 }
 
+export class Vision {
+  constructor(public radiusTiles: number = 10) {}
+}
+
+export type VisibilityState = "unexplored" | "explored" | "visible";
+
+export class Visibility {
+  constructor(public state: VisibilityState = "unexplored") {}
+}
+
+export class FogOfWarComponent {
+  public grid: Uint8Array;
+
+  constructor(public cols: number = 60, public rows: number = 40) {
+    this.grid = new Uint8Array(cols * rows);
+  }
+
+  public get(x: number, y: number): number {
+    if (x < 0 || x >= this.cols || y < 0 || y >= this.rows) return 0;
+    return this.grid[x + y * this.cols] ?? 0;
+  }
+
+  public set(x: number, y: number, value: number): void {
+    if (x >= 0 && x < this.cols && y >= 0 && y < this.rows) {
+      this.grid[x + y * this.cols] = value;
+    }
+  }
+}
+
 export class PlayerTag {}
 export class EnemyTag {}
+export class FogTag {}

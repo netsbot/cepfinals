@@ -13,6 +13,10 @@ import {
   Steering,
   PlayerTag,
   EnemyTag,
+  Vision,
+  Visibility,
+  FogOfWarComponent,
+  FogTag,
 } from "./components";
 import { CaveGenerator } from "./world/CaveGenerator";
 import { MovementSystem } from "./systems/MovementSystem";
@@ -20,6 +24,7 @@ import { SteeringSystem } from "./systems/SteeringSystem";
 import { EnemyAISystem } from "./systems/EnemyAISystem";
 import { ShootingSystem } from "./systems/ShootingSystem";
 import { CollisionSystem } from "./systems/CollisionSystem";
+import { FogOfWarSystem } from "./systems/FogOfWarSystem";
 import { RenderingSystem, RenderStats } from "./systems/RenderingSystem";
 import { GeneticAlgorithmSystem } from "./systems/GeneticAlgorithmSystem";
 
@@ -28,6 +33,7 @@ class GameApp {
   public cave: CaveGenerator;
   public wave: number = 1;
   public playerEntity: Entity | null = null;
+  public fogEntity: Entity | null = null;
   public enemyCountPerWave: number = 12;
   public currentEnemyPool: DNA[] = [];
   public isWaveTransitioning: boolean = false;
@@ -42,7 +48,12 @@ class GameApp {
     // 1. Generate Cave Map
     this.cave.generate(0.45, 5);
 
-    // 2. Spawn Player
+    // 2. Spawn Fog of War Entity
+    this.fogEntity = this.world.spawn();
+    this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
+    this.world.addComponent(this.fogEntity, new FogTag());
+
+    // 3. Spawn Player with Vision Component
     const playerSpawn = this.cave.getFreeSpawnPoint();
     this.playerEntity = this.world.spawn();
     this.world.addComponent(this.playerEntity, new Position(playerSpawn.x, playerSpawn.y));
@@ -50,10 +61,11 @@ class GameApp {
     this.world.addComponent(this.playerEntity, new Health(100, 100));
     this.world.addComponent(this.playerEntity, new Collider(12, false));
     this.world.addComponent(this.playerEntity, new Weapon());
+    this.world.addComponent(this.playerEntity, new Vision(12)); // 12 tile vision radius
     this.world.addComponent(this.playerEntity, new Sprite("#38bdf8", 20, "circle"));
     this.world.addComponent(this.playerEntity, new PlayerTag());
 
-    // 3. Initial Enemy Pool
+    // 4. Initial Enemy Pool
     this.currentEnemyPool = Array.from({ length: this.enemyCountPerWave }, () => new DNA());
     this.spawnEnemyWave();
   }
@@ -72,6 +84,7 @@ class GameApp {
       this.world.addComponent(enemy, new Fitness());
       this.world.addComponent(enemy, new AI());
       this.world.addComponent(enemy, new Steering(dna.speed));
+      this.world.addComponent(enemy, new Visibility()); // Fog of War visibility
       this.world.addComponent(enemy, new Sprite("#ef4444", 16, "circle"));
       this.world.addComponent(enemy, new EnemyTag());
     }
@@ -100,6 +113,11 @@ class GameApp {
 
     // Regenerate new cave cavern layout
     this.cave.generate(0.45, 5);
+
+    // Reset Fog of War Grid for new cavern layout
+    if (this.fogEntity !== null) {
+      this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
+    }
 
     // Relocate player
     if (this.playerEntity !== null && this.world.isAlive(this.playerEntity)) {
@@ -170,13 +188,14 @@ new p5((p: p5) => {
     // Run ECS Systems pipeline
     MovementSystem(game.world, dt, game.cave);
     SteeringSystem(game.world, dt, game.cave);
-    EnemyAISystem(game.world, dt, game.cave);
+    EnemyAISystem(game.world, dt);
     ShootingSystem(game.world, dt, {
       mouseX: p.mouseX,
       mouseY: p.mouseY,
-      isShooting: p.mouseIsPressed || keys.has("Space"),
+      isShooting: Boolean(p.mouseIsPressed || keys.has("Space")),
     });
     CollisionSystem(game.world, dt, game.cave);
+    FogOfWarSystem(game.world, dt, game.cave);
 
     // Maintain deferred despawns at system boundary
     game.world.maintain();
