@@ -193,6 +193,7 @@ new p5((p: p5) => {
       mouseX: p.mouseX,
       mouseY: p.mouseY,
       isShooting: Boolean(p.mouseIsPressed || keys.has("Space")),
+      isReloading: keys.has("KeyR"),
     });
     CollisionSystem(game.world, dt, game.cave);
     FogOfWarSystem(game.world, dt, game.cave);
@@ -222,11 +223,21 @@ new p5((p: p5) => {
     // Get player stats for HUD
     let playerHp = 0;
     let playerMaxHp = 100;
+    let playerAmmo = 15;
+    let playerMaxAmmo = 15;
+    let isReloading = false;
+
     if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const hp = game.world.getComponent(game.playerEntity, Health);
+      const wpn = game.world.getComponent(game.playerEntity, Weapon);
       if (hp) {
         playerHp = hp.current;
         playerMaxHp = hp.max;
+      }
+      if (wpn) {
+        playerAmmo = wpn.ammo;
+        playerMaxAmmo = wpn.maxAmmo;
+        isReloading = wpn.isReloading;
       }
     }
 
@@ -235,6 +246,9 @@ new p5((p: p5) => {
       enemiesRemaining: aliveEnemies,
       playerHp,
       playerMaxHp,
+      playerAmmo,
+      playerMaxAmmo,
+      isReloading,
       topSpeed,
       topHealth,
       topAggression,

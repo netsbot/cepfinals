@@ -8,6 +8,9 @@ export interface RenderStats {
   enemiesRemaining: number;
   playerHp: number;
   playerMaxHp: number;
+  playerAmmo: number;
+  playerMaxAmmo: number;
+  isReloading: boolean;
   topSpeed: number;
   topHealth: number;
   topAggression: number;
@@ -145,7 +148,7 @@ export function RenderingSystem(
 
   // Top Left HUD
   p.fill(15, 23, 42, 230);
-  p.rect(10, 10, 200, 75, 4);
+  p.rect(10, 10, 220, 95, 4);
 
   p.fill(6, 182, 212);
   p.text(`WAVE: ${stats.wave}`, 20, 18);
@@ -153,6 +156,15 @@ export function RenderingSystem(
   p.text(`ENEMIES: ${stats.enemiesRemaining}`, 20, 38);
   p.fill(34, 197, 94);
   p.text(`HP: ${stats.playerHp}/${stats.playerMaxHp}`, 20, 58);
+
+  // Ammo Display
+  if (stats.isReloading) {
+    p.fill(250, 204, 21);
+    p.text("AMMO: RELOADING...", 20, 78);
+  } else {
+    p.fill(250, 204, 21);
+    p.text(`AMMO: ${stats.playerAmmo}/${stats.playerMaxAmmo}`, 20, 78);
+  }
 
   // Top Right Genetic Algorithm Traits HUD
   p.fill(15, 23, 42, 230);

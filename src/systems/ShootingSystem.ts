@@ -4,15 +4,39 @@ import { Position, Velocity, Weapon, Projectile, Lifetime, Sprite, Collider, Pla
 export function ShootingSystem(
   world: World,
   _dt: number,
-  inputState: { mouseX: number; mouseY: number; isShooting: boolean }
+  inputState: { mouseX: number; mouseY: number; isShooting: boolean; isReloading: boolean }
 ): void {
   world.query(Position, Weapon, PlayerTag).each((playerEntity, pos, weapon) => {
+    // Process Reload Timer
+    if (weapon.isReloading) {
+      weapon.reloadTimer--;
+      if (weapon.reloadTimer <= 0) {
+        weapon.ammo = weapon.maxAmmo;
+        weapon.isReloading = false;
+        weapon.reloadTimer = 0;
+      }
+      return; // Cannot fire while reloading
+    }
+
+    // Trigger Manual Reload (R key)
+    if (inputState.isReloading && weapon.ammo < weapon.maxAmmo) {
+      weapon.startReload();
+      return;
+    }
+
     if (weapon.cooldown > 0) {
       weapon.cooldown--;
     }
 
+    // Process Shooting
     if (inputState.isShooting && weapon.cooldown === 0) {
+      if (weapon.ammo <= 0) {
+        weapon.startReload(); // Auto reload when magazine empty
+        return;
+      }
+
       weapon.cooldown = weapon.fireRate;
+      weapon.ammo--; // Consume bullet
 
       const dx = inputState.mouseX - pos.x;
       const dy = inputState.mouseY - pos.y;
