@@ -223,6 +223,16 @@ class GameApp {
   }
 
   public handleWaveEnd(): void {
+    // 1. Level up player & trigger Perk Reward choice!
+    if (this.playerEntity !== null && this.world.isAlive(this.playerEntity)) {
+      const xpComp = this.world.getComponent(this.playerEntity, PlayerXp);
+      if (xpComp) {
+        xpComp.level++;
+        this.trackedLevel = xpComp.level;
+      }
+    }
+    this.triggerLevelUpModal();
+
     // Collect enemy performance data for Genetic Algorithm evolution
     const parentData: { dna: DNA; score: number }[] = [];
 
