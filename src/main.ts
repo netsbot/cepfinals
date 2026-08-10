@@ -115,7 +115,7 @@ class GameApp {
     // Perk Pool
     const allPerks: Perk[] = [
       { id: "lifesteal", title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
-      { id: "max_ammo", title: "SLEIGHT OF HAND", desc: "+30% Reload Speed (Faster magazine reload)" },
+      { id: "max_ammo", title: "EXTENDED CLIP", desc: "+2 Max Magazine Capacity & Instant Refill" },
       { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Attack Speed (Reduces shot cooldown)" },
       { id: "damage", title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
       { id: "speed", title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
@@ -158,7 +158,11 @@ class GameApp {
         if (wpn) wpn.lifesteal += 0.10;
         break;
       case "max_ammo":
-        if (wpn) wpn.reloadTime = Math.max(30, Math.floor(wpn.reloadTime * 0.7));
+        if (wpn) {
+          wpn.maxAmmo += 2;
+          wpn.ammo = wpn.maxAmmo;
+          wpn.isReloading = false;
+        }
         break;
       case "fire_rate":
         if (wpn) wpn.fireRate = Math.max(2, Math.floor(wpn.fireRate * 0.75));
