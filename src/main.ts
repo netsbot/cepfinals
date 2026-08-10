@@ -40,7 +40,7 @@ class GameApp {
   public wave: number = 1;
   public playerEntity: Entity | null = null;
   public fogEntity: Entity | null = null;
-  public enemyCountPerWave: number = 12;
+  public enemyCountPerWave: number = 5;
   public currentEnemyPool: DNA[] = [];
   public isWaveTransitioning: boolean = false;
   public isGameOver: boolean = false;
@@ -53,7 +53,7 @@ class GameApp {
 
   constructor() {
     this.world = new World();
-    this.cave = new CaveGenerator(60, 40, 20); // 1200x800 resolution
+    this.cave = new CaveGenerator(40, 30, 20); // 800x600 resolution (compact cavern map)
   }
 
   public initGame(): void {
@@ -67,7 +67,7 @@ class GameApp {
 
     // 2. Spawn Fog of War Entity
     this.fogEntity = this.world.spawn();
-    this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
+    this.world.addComponent(this.fogEntity, new FogOfWarComponent(40, 30));
     this.world.addComponent(this.fogEntity, new FogTag());
 
     // 3. Spawn Player with Vision Component, PlayerXp & MeleeAttack
@@ -100,7 +100,7 @@ class GameApp {
     }
 
     this.wave = 1;
-    this.enemyCountPerWave = 12;
+    this.enemyCountPerWave = 5;
     this.isStartScreen = false;
     this.initGame();
   }
@@ -263,9 +263,9 @@ class GameApp {
       });
     });
 
-    // Increase difficulty
+    // Increase difficulty (+1 enemy per wave for compact scaling)
     this.wave++;
-    this.enemyCountPerWave += 2;
+    this.enemyCountPerWave += 1;
 
     // Evolve next generation with archetype-specific fitness weighting & mutations
     this.currentEnemyPool = GeneticAlgorithmSystem.evolvePopulation(
@@ -278,7 +278,7 @@ class GameApp {
 
     // Reset Fog of War Grid for new cavern layout
     if (this.fogEntity !== null) {
-      this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
+      this.world.addComponent(this.fogEntity, new FogOfWarComponent(40, 30));
     }
 
     // Relocate player
@@ -316,7 +316,7 @@ window.addEventListener("blur", () => {
 // Setup p5 sketch
 new p5((p: p5) => {
   p.setup = () => {
-    const canvas = p.createCanvas(1200, 800);
+    const canvas = p.createCanvas(800, 600);
     canvas.parent("canvas-container");
     canvas.elt.oncontextmenu = (e: MouseEvent) => e.preventDefault(); // Disable context menu
     p.frameRate(60);
