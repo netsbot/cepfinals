@@ -19,6 +19,9 @@ import {
   Visibility,
   FogOfWarComponent,
   FogTag,
+  PlayerXp,
+  Perk,
+  PerkType,
 } from "./components";
 import { CaveGenerator } from "./world/CaveGenerator";
 import { MovementSystem } from "./systems/MovementSystem";
@@ -42,6 +45,9 @@ class GameApp {
   public isGameOver: boolean = false;
   public isStartScreen: boolean = true;
   public isHelpOpen: boolean = false;
+  public isLevelUpOpen: boolean = false;
+  public trackedLevel: number = 1;
+  public playerMoveSpeed: number = 3.5;
 
   constructor() {
     this.world = new World();
@@ -51,6 +57,8 @@ class GameApp {
   public initGame(): void {
     // Reset World State
     this.isGameOver = false;
+    this.trackedLevel = 1;
+    this.playerMoveSpeed = 3.5;
 
     // 1. Generate Cave Map
     this.cave.generate(0.45, 5);
@@ -60,7 +68,7 @@ class GameApp {
     this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
     this.world.addComponent(this.fogEntity, new FogTag());
 
-    // 3. Spawn Player with Vision Component
+    // 3. Spawn Player with Vision Component & PlayerXp
     const playerSpawn = this.cave.getFreeSpawnPoint();
     this.playerEntity = this.world.spawn();
     this.world.addComponent(this.playerEntity, new Position(playerSpawn.x, playerSpawn.y));
@@ -69,6 +77,7 @@ class GameApp {
     this.world.addComponent(this.playerEntity, new Collider(12, false));
     this.world.addComponent(this.playerEntity, new Weapon());
     this.world.addComponent(this.playerEntity, new Vision(12)); // 12 tile vision radius
+    this.world.addComponent(this.playerEntity, new PlayerXp());
     this.world.addComponent(this.playerEntity, new Sprite("#38bdf8", 20, "circle"));
     this.world.addComponent(this.playerEntity, new PlayerTag());
 
@@ -91,6 +100,87 @@ class GameApp {
     this.enemyCountPerWave = 12;
     this.isStartScreen = false;
     this.initGame();
+  }
+
+  public triggerLevelUpModal(): void {
+    this.isLevelUpOpen = true;
+
+    const modal = document.getElementById("level-up-modal");
+    const container = document.getElementById("perks-container");
+
+    if (!modal || !container) return;
+
+    // Perk Pool
+    const allPerks: Perk[] = [
+      { id: "lifesteal", title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
+      { id: "max_ammo", title: "EXTENDED MAG", desc: "+3 Max Magazine Capacity & Instant Refill" },
+      { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Attack Speed (Reduces shot cooldown)" },
+      { id: "damage", title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
+      { id: "speed", title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
+      { id: "vision", title: "EAGLE EYE", desc: "+4 Tiles Vision Radius in Fog of War" },
+      { id: "max_hp", title: "VITALITY", desc: "+40 Max Health & Full Heal" },
+    ];
+
+    // Pick 3 random perks
+    const shuffled = [...allPerks].sort(() => Math.random() - 0.5);
+    const chosen = shuffled.slice(0, 3);
+
+    container.innerHTML = "";
+    chosen.forEach((perk) => {
+      const card = document.createElement("div");
+      card.className = "perk-option";
+      card.innerHTML = `
+        <div class="perk-title">${perk.title}</div>
+        <div class="perk-desc">${perk.desc}</div>
+      `;
+      card.addEventListener("click", () => {
+        this.applyPerk(perk.id);
+        modal.style.display = "none";
+        this.isLevelUpOpen = false;
+      });
+      container.appendChild(card);
+    });
+
+    modal.style.display = "flex";
+  }
+
+  public applyPerk(perk: PerkType): void {
+    if (this.playerEntity === null || !this.world.isAlive(this.playerEntity)) return;
+
+    const wpn = this.world.getComponent(this.playerEntity, Weapon);
+    const hp = this.world.getComponent(this.playerEntity, Health);
+    const vis = this.world.getComponent(this.playerEntity, Vision);
+
+    switch (perk) {
+      case "lifesteal":
+        if (wpn) wpn.lifesteal += 0.10;
+        break;
+      case "max_ammo":
+        if (wpn) {
+          wpn.maxAmmo += 3;
+          wpn.ammo = wpn.maxAmmo;
+          wpn.isReloading = false;
+        }
+        break;
+      case "fire_rate":
+        if (wpn) wpn.fireRate = Math.max(2, Math.floor(wpn.fireRate * 0.75));
+        break;
+      case "damage":
+        if (wpn) wpn.damage = Math.floor(wpn.damage * 1.3);
+        break;
+      case "speed":
+        this.playerMoveSpeed *= 1.2;
+        break;
+      case "vision":
+        if (vis) vis.radiusTiles += 4;
+        break;
+      case "max_hp":
+        if (hp) {
+          hp.max += 40;
+          hp.current = hp.max;
+        }
+        break;
+    }
   }
 
   public spawnEnemyWave(): void {
@@ -246,13 +336,22 @@ new p5((p: p5) => {
       }
     }
 
+    // Check for Player Level Up
+    if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
+      const xpComp = game.world.getComponent(game.playerEntity, PlayerXp);
+      if (xpComp && xpComp.level > game.trackedLevel) {
+        game.trackedLevel = xpComp.level;
+        game.triggerLevelUpModal();
+      }
+    }
+
     // Handle Player WASD Movement Input directly on Velocity component
-    const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver;
+    const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver && !game.isLevelUpOpen;
 
     if (canPlay && game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const vel = game.world.getComponent(game.playerEntity, Velocity);
       if (vel) {
-        const moveSpeed = 3.5;
+        const moveSpeed = game.playerMoveSpeed;
         let vx = 0;
         let vy = 0;
 
@@ -314,10 +413,16 @@ new p5((p: p5) => {
     let playerAmmo = 5;
     let playerMaxAmmo = 5;
     let isReloading = false;
+    let playerLifesteal = 0.20;
+    let playerLevel = 1;
+    let playerXpVal = 0;
+    let playerXpMax = 100;
 
     if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const hp = game.world.getComponent(game.playerEntity, Health);
       const wpn = game.world.getComponent(game.playerEntity, Weapon);
+      const xp = game.world.getComponent(game.playerEntity, PlayerXp);
+
       if (hp) {
         playerHp = hp.current;
         playerMaxHp = hp.max;
@@ -333,6 +438,12 @@ new p5((p: p5) => {
         playerAmmo = wpn.ammo;
         playerMaxAmmo = wpn.maxAmmo;
         isReloading = wpn.isReloading;
+        playerLifesteal = wpn.lifesteal;
+      }
+      if (xp) {
+        playerLevel = xp.level;
+        playerXpVal = xp.currentXp;
+        playerXpMax = xp.xpToNextLevel;
       }
     }
 
@@ -354,17 +465,27 @@ new p5((p: p5) => {
     };
 
     // Update External DOM HUD Sidebar
-    updateDomHud(stats);
+    updateDomHud(stats, playerLevel, playerXpVal, playerXpMax, playerLifesteal);
 
     // Render Canvas
     RenderingSystem(game.world, p, game.cave, stats);
   };
 });
 
-function updateDomHud(stats: RenderStats): void {
+function updateDomHud(
+  stats: RenderStats,
+  level: number,
+  xp: number,
+  xpMax: number,
+  lifesteal: number
+): void {
+  const levelEl = document.getElementById("hud-level");
+  const xpEl = document.getElementById("hud-xp");
+  const xpBarEl = document.getElementById("hud-xp-bar");
   const hpEl = document.getElementById("hud-hp");
   const hpBarEl = document.getElementById("hud-hp-bar");
   const ammoEl = document.getElementById("hud-ammo");
+  const lifestealEl = document.getElementById("hud-lifesteal");
   const waveEl = document.getElementById("hud-wave");
   const waveTypeEl = document.getElementById("hud-wave-type");
   const enemiesEl = document.getElementById("hud-enemies");
@@ -373,6 +494,12 @@ function updateDomHud(stats: RenderStats): void {
   const aggEl = document.getElementById("hud-top-aggression");
   const healEl = document.getElementById("hud-top-heal");
 
+  if (levelEl) levelEl.textContent = `${level}`;
+  if (xpEl) xpEl.textContent = `${xp}/${xpMax}`;
+  if (xpBarEl) {
+    const pct = Math.max(0, Math.min(100, (xp / xpMax) * 100));
+    xpBarEl.style.width = `${pct}%`;
+  }
   if (hpEl) hpEl.textContent = `${Math.ceil(stats.playerHp)}/${stats.playerMaxHp}`;
   if (hpBarEl) {
     const pct = Math.max(0, Math.min(100, (stats.playerHp / stats.playerMaxHp) * 100));
@@ -380,6 +507,9 @@ function updateDomHud(stats: RenderStats): void {
   }
   if (ammoEl) {
     ammoEl.textContent = stats.isReloading ? "RELOADING..." : `${stats.playerAmmo}/${stats.playerMaxAmmo}`;
+  }
+  if (lifestealEl) {
+    lifestealEl.textContent = `${(lifesteal * 100).toFixed(0)}%`;
   }
   if (waveEl) waveEl.textContent = `${stats.wave}`;
   if (waveTypeEl) {

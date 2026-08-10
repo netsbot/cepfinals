@@ -152,6 +152,38 @@ export class FogOfWarComponent {
 
 export type EnemyArchetype = "slasher" | "shooter" | "tank";
 
+export class PlayerXp {
+  public level: number = 1;
+  public currentXp: number = 0;
+  public xpToNextLevel: number = 100;
+
+  public addXp(amount: number): boolean {
+    this.currentXp += amount;
+    if (this.currentXp >= this.xpToNextLevel) {
+      this.currentXp -= this.xpToNextLevel;
+      this.level++;
+      this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.35);
+      return true; // Level up triggered!
+    }
+    return false;
+  }
+}
+
+export type PerkType =
+  | "lifesteal"
+  | "max_ammo"
+  | "fire_rate"
+  | "damage"
+  | "speed"
+  | "vision"
+  | "max_hp";
+
+export interface Perk {
+  id: PerkType;
+  title: string;
+  desc: string;
+}
+
 export class EnemyType {
   constructor(public archetype: EnemyArchetype = "slasher") {}
 }
