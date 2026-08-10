@@ -39,7 +39,7 @@ export function ShootingSystem(world: World, _dt: number, input: ShootingInput):
             let angleDiff = Math.abs(angle - eAngle);
             if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
-            if (angleDiff <= Math.PI / 4.8) { // 75 degree cone arc
+            if (angleDiff <= melee.arcAngle) {
               const damageDealt = Math.min(eHp.current, melee.damage);
               eHp.current -= melee.damage;
 

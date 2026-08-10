@@ -116,11 +116,14 @@ class GameApp {
     const allPerks: Perk[] = [
       { id: "lifesteal", title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
       { id: "max_ammo", title: "EXTENDED CLIP", desc: "+2 Max Magazine Capacity & Instant Refill" },
-      { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Attack Speed (Reduces shot cooldown)" },
+      { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Ranged Attack Speed (Reduces shot cooldown)" },
       { id: "damage", title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
       { id: "speed", title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
       { id: "vision", title: "EAGLE EYE", desc: "+4 Tiles Vision Radius in Fog of War" },
       { id: "max_hp", title: "VITALITY", desc: "+40 Max Health & Full Heal" },
+      { id: "melee_damage", title: "HEAVY BLADE", desc: "+40% Melee Slash Damage" },
+      { id: "melee_speed", title: "QUICK SLASH", desc: "-35% Melee Cooldown Speed" },
+      { id: "melee_range", title: "WHIRLWIND ARC", desc: "+40% Melee Range & Wider Cone Arc" },
     ];
 
     // Pick 3 random perks
@@ -152,6 +155,7 @@ class GameApp {
     const wpn = this.world.getComponent(this.playerEntity, Weapon);
     const hp = this.world.getComponent(this.playerEntity, Health);
     const vis = this.world.getComponent(this.playerEntity, Vision);
+    const melee = this.world.getComponent(this.playerEntity, MeleeAttack);
 
     switch (perk) {
       case "lifesteal":
@@ -180,6 +184,18 @@ class GameApp {
         if (hp) {
           hp.max += 40;
           hp.current = hp.max;
+        }
+        break;
+      case "melee_damage":
+        if (melee) melee.damage = Math.floor(melee.damage * 1.4);
+        break;
+      case "melee_speed":
+        if (melee) melee.maxCooldown = Math.max(20, Math.floor(melee.maxCooldown * 0.65));
+        break;
+      case "melee_range":
+        if (melee) {
+          melee.range = Math.floor(melee.range * 1.4);
+          melee.arcAngle = Math.min(Math.PI * 0.6, melee.arcAngle * 1.35);
         }
         break;
     }

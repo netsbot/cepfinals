@@ -176,10 +176,10 @@ export function RenderingSystem(
       p.noFill();
       p.stroke(6, 182, 212, p.map(melee.slashAnimTimer, 0, 12, 0, 255));
       p.strokeWeight(4);
-      p.arc(0, 0, melee.range * 2, melee.range * 2, -p.PI / 4.8, p.PI / 4.8);
+      p.arc(0, 0, melee.range * 2, melee.range * 2, -melee.arcAngle, melee.arcAngle);
       p.stroke(255, 255, 255, p.map(melee.slashAnimTimer, 0, 12, 0, 255));
       p.strokeWeight(2);
-      p.arc(0, 0, melee.range * 1.8, melee.range * 1.8, -p.PI / 4.8, p.PI / 4.8);
+      p.arc(0, 0, melee.range * 1.8, melee.range * 1.8, -melee.arcAngle, melee.arcAngle);
       p.pop();
     }
 

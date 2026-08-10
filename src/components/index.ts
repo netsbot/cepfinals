@@ -112,6 +112,7 @@ export class MeleeAttack {
   public maxCooldown: number = 60; // 60 frames (1.0s cooldown)
   public slashAnimTimer: number = 0;
   public slashAngle: number = 0;
+  public arcAngle: number = Math.PI / 4.8; // 75 degree cone
 }
 
 export class Projectile {
@@ -185,7 +186,10 @@ export type PerkType =
   | "damage"
   | "speed"
   | "vision"
-  | "max_hp";
+  | "max_hp"
+  | "melee_damage"
+  | "melee_speed"
+  | "melee_range";
 
 export interface Perk {
   id: PerkType;
