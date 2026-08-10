@@ -310,7 +310,7 @@ window.addEventListener("keydown", (e) => {
     game.isHelpOpen = !game.isHelpOpen;
     helpKeyPressedLast = true;
   }
-  if (e.code === "KeyD" && !dnaKeyPressedLast) {
+  if (e.code === "KeyE" && !dnaKeyPressedLast) {
     game.isDnaModalOpen = !game.isDnaModalOpen;
     const modal = document.getElementById("dna-modal");
     if (modal) modal.style.display = game.isDnaModalOpen ? "flex" : "none";
@@ -323,7 +323,7 @@ window.addEventListener("keyup", (e) => {
   if (e.code === "KeyH") {
     helpKeyPressedLast = false;
   }
-  if (e.code === "KeyD") {
+  if (e.code === "KeyE") {
     dnaKeyPressedLast = false;
   }
 });
