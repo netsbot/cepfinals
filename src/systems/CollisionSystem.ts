@@ -60,6 +60,12 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
         world.despawn(bulletEntity);
 
         if (enemy.health.current <= 0) {
+          // Refill player ammo on kill!
+          if (playerWeapon) {
+            (playerWeapon as Weapon).ammo = (playerWeapon as Weapon).maxAmmo;
+            (playerWeapon as Weapon).isReloading = false;
+            (playerWeapon as Weapon).reloadTimer = 0;
+          }
           world.despawn(enemy.entity);
         }
         break;

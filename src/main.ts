@@ -311,8 +311,8 @@ new p5((p: p5) => {
     // Get player stats & check player death
     let playerHp = 0;
     let playerMaxHp = 100;
-    let playerAmmo = 15;
-    let playerMaxAmmo = 15;
+    let playerAmmo = 5;
+    let playerMaxAmmo = 5;
     let isReloading = false;
 
     if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {

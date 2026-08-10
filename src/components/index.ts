@@ -92,8 +92,8 @@ export class Weapon {
   public cooldown: number = 0;
   public bulletSpeed: number = 8;
   public lifesteal: number = 0.20; // 20% damage converted to player HP
-  public ammo: number = 15;
-  public maxAmmo: number = 15;
+  public ammo: number = 5;
+  public maxAmmo: number = 5;
   public reloadTime: number = 90; // 90 frames = 1.5s reload duration
   public reloadTimer: number = 0;
   public isReloading: boolean = false;
