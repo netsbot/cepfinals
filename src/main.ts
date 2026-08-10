@@ -84,7 +84,8 @@ class GameApp {
     this.world.addComponent(this.playerEntity, new Sprite("#38bdf8", 20, "circle"));
     this.world.addComponent(this.playerEntity, new PlayerTag());
 
-    // 4. Initial Enemy Pool
+    // 4. Initial Enemy Pool (Random 5 to 8 enemies)
+    this.enemyCountPerWave = Math.floor(Math.random() * 4) + 5;
     this.currentEnemyPool = Array.from({ length: this.enemyCountPerWave }, () => new DNA());
     this.spawnEnemyWave();
   }
@@ -100,7 +101,7 @@ class GameApp {
     }
 
     this.wave = 1;
-    this.enemyCountPerWave = 5;
+    this.enemyCountPerWave = Math.floor(Math.random() * 4) + 5; // Random 5-8 enemies
     this.isStartScreen = false;
     this.initGame();
   }
@@ -263,9 +264,9 @@ class GameApp {
       });
     });
 
-    // Increase difficulty (+1 enemy per wave for compact scaling)
+    // Randomize enemy count between 5 and 8 per wave
     this.wave++;
-    this.enemyCountPerWave += 1;
+    this.enemyCountPerWave = Math.floor(Math.random() * 4) + 5;
 
     // Evolve next generation with archetype-specific fitness weighting & mutations
     this.currentEnemyPool = GeneticAlgorithmSystem.evolvePopulation(
