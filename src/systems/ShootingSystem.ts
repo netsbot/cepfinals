@@ -39,13 +39,13 @@ export function ShootingSystem(world: World, _dt: number, input: ShootingInput):
             let angleDiff = Math.abs(angle - eAngle);
             if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
-            if (angleDiff <= Math.PI / 3) { // 120 degree cone arc
+            if (angleDiff <= Math.PI / 4.8) { // 75 degree cone arc
               const damageDealt = Math.min(eHp.current, melee.damage);
               eHp.current -= melee.damage;
 
-              // Lifesteal heal
+              // Lifesteal heal (50% efficiency for melee)
               if (health) {
-                health.current = Math.min(health.max, health.current + damageDealt * weapon.lifesteal);
+                health.current = Math.min(health.max, health.current + damageDealt * weapon.lifesteal * 0.5);
               }
 
               // Despawn enemy on kill (no ammo refill for melee)

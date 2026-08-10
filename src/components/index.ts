@@ -106,10 +106,10 @@ export class Weapon {
 }
 
 export class MeleeAttack {
-  public damage: number = 60;
-  public range: number = 45;
+  public damage: number = 35;
+  public range: number = 35;
   public cooldown: number = 0;
-  public maxCooldown: number = 30; // 30 frames (0.5s)
+  public maxCooldown: number = 60; // 60 frames (1.0s cooldown)
   public slashAnimTimer: number = 0;
   public slashAngle: number = 0;
 }
