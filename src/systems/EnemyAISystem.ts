@@ -69,7 +69,7 @@ export function EnemyAISystem(world: World, _dt: number): void {
 
         // Shoot projectile at player
         if (ai.cooldownTimer === 0) {
-          ai.cooldownTimer = dna.attackCooldown;
+          ai.cooldownTimer = Math.floor(dna.attackCooldown * 1.4);
           fitness.attackCount++;
 
           const bulletSpeed = 5.5;
@@ -83,7 +83,7 @@ export function EnemyAISystem(world: World, _dt: number): void {
           const bullet = world.spawn();
           world.addComponent(bullet, new Position(spawnX, spawnY));
           world.addComponent(bullet, new Velocity(vx, vy));
-          world.addComponent(bullet, new Projectile(12, enemyEntity)); // 12 damage
+          world.addComponent(bullet, new Projectile(6, enemyEntity)); // 6 damage (reduced from 12)
           world.addComponent(bullet, new Collider(5, false));
           world.addComponent(bullet, new Lifetime(140, 140));
           world.addComponent(bullet, new Sprite("#f43f5e", 8, "circle"));
