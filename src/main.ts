@@ -38,6 +38,7 @@ class GameApp {
   public currentEnemyPool: DNA[] = [];
   public isWaveTransitioning: boolean = false;
   public transitionTimer: number = 0;
+  public isGameOver: boolean = false;
 
   constructor() {
     this.world = new World();
@@ -45,6 +46,9 @@ class GameApp {
   }
 
   public initGame(): void {
+    // Reset World State
+    this.isGameOver = false;
+
     // 1. Generate Cave Map
     this.cave.generate(0.45, 5);
 
@@ -68,6 +72,21 @@ class GameApp {
     // 4. Initial Enemy Pool
     this.currentEnemyPool = Array.from({ length: this.enemyCountPerWave }, () => new DNA());
     this.spawnEnemyWave();
+  }
+
+  public restartGame(): void {
+    // Wipe all entities from world
+    const entitiesToDespawn: Entity[] = [];
+    this.world.query(Position).each((entity) => {
+      entitiesToDespawn.push(entity);
+    });
+    for (const e of entitiesToDespawn) {
+      this.world.despawnImmediate(e);
+    }
+
+    this.wave = 1;
+    this.enemyCountPerWave = 12;
+    this.initGame();
   }
 
   public spawnEnemyWave(): void {
@@ -162,8 +181,15 @@ new p5((p: p5) => {
   p.draw = () => {
     const dt = 1 / 60;
 
+    // Game Over Restart Listener
+    if (game.isGameOver) {
+      if (keys.has("KeyR") || keys.has("Space")) {
+        game.restartGame();
+      }
+    }
+
     // Handle Player WASD Movement Input directly on Velocity component
-    if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
+    if (!game.isGameOver && game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const vel = game.world.getComponent(game.playerEntity, Velocity);
       if (vel) {
         const moveSpeed = 3.5;
@@ -186,17 +212,19 @@ new p5((p: p5) => {
     }
 
     // Run ECS Systems pipeline
-    MovementSystem(game.world, dt, game.cave);
-    SteeringSystem(game.world, dt, game.cave);
-    EnemyAISystem(game.world, dt);
-    ShootingSystem(game.world, dt, {
-      mouseX: p.mouseX,
-      mouseY: p.mouseY,
-      isShooting: Boolean(p.mouseIsPressed || keys.has("Space")),
-      isReloading: keys.has("KeyR"),
-    });
-    CollisionSystem(game.world, dt, game.cave);
-    FogOfWarSystem(game.world, dt, game.cave);
+    if (!game.isGameOver) {
+      MovementSystem(game.world, dt, game.cave);
+      SteeringSystem(game.world, dt, game.cave);
+      EnemyAISystem(game.world, dt);
+      ShootingSystem(game.world, dt, {
+        mouseX: p.mouseX,
+        mouseY: p.mouseY,
+        isShooting: Boolean(p.mouseIsPressed || keys.has("Space")),
+        isReloading: keys.has("KeyR"),
+      });
+      CollisionSystem(game.world, dt, game.cave);
+      FogOfWarSystem(game.world, dt, game.cave);
+    }
 
     // Maintain deferred despawns at system boundary
     game.world.maintain();
@@ -216,11 +244,11 @@ new p5((p: p5) => {
       if (dna.healRate > topHealRate) topHealRate = dna.healRate;
     });
 
-    if (aliveEnemies === 0 && !game.isWaveTransitioning) {
+    if (aliveEnemies === 0 && !game.isWaveTransitioning && !game.isGameOver) {
       game.handleWaveEnd();
     }
 
-    // Get player stats for HUD
+    // Get player stats & check player death
     let playerHp = 0;
     let playerMaxHp = 100;
     let playerAmmo = 15;
@@ -233,6 +261,13 @@ new p5((p: p5) => {
       if (hp) {
         playerHp = hp.current;
         playerMaxHp = hp.max;
+
+        if (hp.current <= 0) {
+          // Player dies!
+          game.world.despawn(game.playerEntity);
+          game.playerEntity = null;
+          game.isGameOver = true;
+        }
       }
       if (wpn) {
         playerAmmo = wpn.ammo;
@@ -249,6 +284,7 @@ new p5((p: p5) => {
       playerAmmo,
       playerMaxAmmo,
       isReloading,
+      isGameOver: game.isGameOver,
       topSpeed,
       topHealth,
       topAggression,

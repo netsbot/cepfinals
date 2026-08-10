@@ -11,6 +11,7 @@ export interface RenderStats {
   playerAmmo: number;
   playerMaxAmmo: number;
   isReloading: boolean;
+  isGameOver: boolean;
   topSpeed: number;
   topHealth: number;
   topAggression: number;
@@ -155,7 +156,7 @@ export function RenderingSystem(
   p.fill(244, 63, 94);
   p.text(`ENEMIES: ${stats.enemiesRemaining}`, 20, 38);
   p.fill(34, 197, 94);
-  p.text(`HP: ${stats.playerHp}/${stats.playerMaxHp}`, 20, 58);
+  p.text(`HP: ${Math.ceil(stats.playerHp)}/${stats.playerMaxHp}`, 20, 58);
 
   // Ammo Display
   if (stats.isReloading) {
@@ -179,4 +180,22 @@ export function RenderingSystem(
   p.text(`Top Aggression: ${(stats.topAggression * 100).toFixed(0)}%`, p.width - 230, 70);
   p.text(`Top Heal Rate: ${stats.topHealRate.toFixed(2)} HP/f`, p.width - 230, 86);
   p.pop();
+
+  // 7. Game Over Screen Overlay
+  if (stats.isGameOver) {
+    p.push();
+    p.fill(0, 0, 0, 220);
+    p.rect(0, 0, p.width, p.height);
+
+    p.textAlign(p.CENTER, p.CENTER);
+    p.fill(239, 68, 68);
+    p.textSize(48);
+    p.textFont("monospace");
+    p.text("GAME OVER", p.width / 2, p.height / 2 - 30);
+
+    p.fill(226, 232, 240);
+    p.textSize(18);
+    p.text("PRESS 'R' OR 'SPACE' TO RESTART", p.width / 2, p.height / 2 + 30);
+    p.pop();
+  }
 }
