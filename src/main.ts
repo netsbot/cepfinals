@@ -39,8 +39,9 @@ class GameApp {
   public enemyCountPerWave: number = 12;
   public currentEnemyPool: DNA[] = [];
   public isWaveTransitioning: boolean = false;
-  public transitionTimer: number = 0;
   public isGameOver: boolean = false;
+  public isStartScreen: boolean = true;
+  public isHelpOpen: boolean = false;
 
   constructor() {
     this.world = new World();
@@ -88,6 +89,7 @@ class GameApp {
 
     this.wave = 1;
     this.enemyCountPerWave = 12;
+    this.isStartScreen = false;
     this.initGame();
   }
 
@@ -96,9 +98,19 @@ class GameApp {
       const dna = this.currentEnemyPool[i]!;
       const spawn = this.cave.getFreeSpawnPoint();
 
-      // Pick archetype
-      const rand = Math.random();
-      const archetype: EnemyArchetype = rand < 0.5 ? "slasher" : rand < 0.85 ? "shooter" : "tank";
+      // Progressive Enemy Introduction per Wave
+      let archetype: EnemyArchetype = "slasher";
+      if (this.wave === 1) {
+        archetype = "slasher";
+      } else if (this.wave === 2) {
+        archetype = "shooter";
+      } else if (this.wave === 3) {
+        archetype = "tank";
+      } else {
+        // Wave 4+: Mixed Swarm
+        const rand = Math.random();
+        archetype = rand < 0.5 ? "slasher" : rand < 0.85 ? "shooter" : "tank";
+      }
 
       const maxHealth = archetype === "tank" ? dna.maxHealth * 2.5 : dna.maxHealth;
       const speed = archetype === "tank" ? dna.speed * 0.6 : archetype === "slasher" ? dna.speed * 1.2 : dna.speed;
@@ -168,13 +180,22 @@ const game = new GameApp();
 game.initGame();
 
 const keys = new Set<string>();
+let helpKeyPressedLast = false;
 
 window.addEventListener("keydown", (e) => {
   keys.add(e.code);
+
+  if (e.code === "KeyH" && !helpKeyPressedLast) {
+    game.isHelpOpen = !game.isHelpOpen;
+    helpKeyPressedLast = true;
+  }
 });
 
 window.addEventListener("keyup", (e) => {
   keys.delete(e.code);
+  if (e.code === "KeyH") {
+    helpKeyPressedLast = false;
+  }
 });
 
 window.addEventListener("blur", () => {
@@ -189,8 +210,31 @@ new p5((p: p5) => {
     p.frameRate(60);
   };
 
+  p.mousePressed = () => {
+    if (game.isStartScreen) {
+      game.isStartScreen = false;
+      return;
+    }
+    if (game.isHelpOpen) {
+      game.isHelpOpen = false;
+      return;
+    }
+
+    // Help Button Click Check (Top Left HUD button)
+    if (p.mouseX >= 20 && p.mouseX <= 95 && p.mouseY >= 96 && p.mouseY <= 116) {
+      game.isHelpOpen = !game.isHelpOpen;
+    }
+  };
+
   p.draw = () => {
     const dt = 1 / 60;
+
+    // Start Screen Input Listener
+    if (game.isStartScreen) {
+      if (keys.has("Space") || keys.has("KeyR")) {
+        game.isStartScreen = false;
+      }
+    }
 
     // Game Over Restart Listener
     if (game.isGameOver) {
@@ -200,7 +244,9 @@ new p5((p: p5) => {
     }
 
     // Handle Player WASD Movement Input directly on Velocity component
-    if (!game.isGameOver && game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
+    const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver;
+
+    if (canPlay && game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const vel = game.world.getComponent(game.playerEntity, Velocity);
       if (vel) {
         const moveSpeed = 3.5;
@@ -223,7 +269,7 @@ new p5((p: p5) => {
     }
 
     // Run ECS Systems pipeline
-    if (!game.isGameOver) {
+    if (canPlay) {
       MovementSystem(game.world, dt, game.cave);
       SteeringSystem(game.world, dt, game.cave);
       EnemyAISystem(game.world, dt);
@@ -255,7 +301,7 @@ new p5((p: p5) => {
       if (dna.healRate > topHealRate) topHealRate = dna.healRate;
     });
 
-    if (aliveEnemies === 0 && !game.isWaveTransitioning && !game.isGameOver) {
+    if (aliveEnemies === 0 && !game.isWaveTransitioning && canPlay) {
       game.handleWaveEnd();
     }
 
@@ -296,6 +342,8 @@ new p5((p: p5) => {
       playerMaxAmmo,
       isReloading,
       isGameOver: game.isGameOver,
+      isStartScreen: game.isStartScreen,
+      isHelpOpen: game.isHelpOpen,
       topSpeed,
       topHealth,
       topAggression,

@@ -12,6 +12,8 @@ export interface RenderStats {
   playerMaxAmmo: number;
   isReloading: boolean;
   isGameOver: boolean;
+  isStartScreen: boolean;
+  isHelpOpen: boolean;
   topSpeed: number;
   topHealth: number;
   topAggression: number;
@@ -107,7 +109,7 @@ export function RenderingSystem(
       p.rectMode(p.CENTER);
       p.rect(0, 0, sprite.size * 1.3, sprite.size * 1.3, 4);
     } else {
-      // Crimson Circle / Triangle for Slasher
+      // Crimson Circle for Slasher
       const r = p.map(dna.aggression, 0.1, 1.0, 200, 255);
       const g = p.map(dna.speed, 1.0, 4.5, 60, 180);
       p.fill(r, g, 30);
@@ -164,10 +166,15 @@ export function RenderingSystem(
 
   // Top Left HUD
   p.fill(15, 23, 42, 230);
-  p.rect(10, 10, 220, 95, 4);
+  p.rect(10, 10, 240, 115, 4);
 
   p.fill(6, 182, 212);
-  p.text(`WAVE: ${stats.wave}`, 20, 18);
+  let waveTypeName = "SLASHERS";
+  if (stats.wave === 2) waveTypeName = "SHOOTERS";
+  else if (stats.wave === 3) waveTypeName = "TANKS";
+  else if (stats.wave >= 4) waveTypeName = "MIXED SWARM";
+
+  p.text(`WAVE: ${stats.wave} (${waveTypeName})`, 20, 18);
   p.fill(244, 63, 94);
   p.text(`ENEMIES: ${stats.enemiesRemaining}`, 20, 38);
   p.fill(34, 197, 94);
@@ -182,11 +189,19 @@ export function RenderingSystem(
     p.text(`AMMO: ${stats.playerAmmo}/${stats.playerMaxAmmo}`, 20, 78);
   }
 
+  // HELP Button [H]
+  p.fill(67, 56, 202);
+  p.rect(20, 96, 75, 20, 3);
+  p.fill(255);
+  p.textSize(11);
+  p.text("[H] HELP", 28, 99);
+
   // Top Right Genetic Algorithm Traits HUD
   p.fill(15, 23, 42, 230);
   p.rect(p.width - 240, 10, 230, 115, 4);
 
   p.fill(6, 182, 212);
+  p.textSize(14);
   p.text("DNA EVOLUTION TRAITS", p.width - 230, 18);
   p.fill(226, 232, 240);
   p.textSize(12);
@@ -196,7 +211,88 @@ export function RenderingSystem(
   p.text(`Top Heal Rate: ${stats.topHealRate.toFixed(2)} HP/f`, p.width - 230, 86);
   p.pop();
 
-  // 7. Game Over Screen Overlay
+  // 7. Start Screen Overlay
+  if (stats.isStartScreen) {
+    p.push();
+    p.fill(5, 7, 12, 245);
+    p.rect(0, 0, p.width, p.height);
+
+    p.textAlign(p.CENTER, p.CENTER);
+    p.fill(6, 182, 212);
+    p.textSize(52);
+    p.textFont("monospace");
+    p.text("HIVE COLLAPSE", p.width / 2, p.height / 2 - 120);
+
+    p.fill(226, 232, 240);
+    p.textSize(16);
+    p.text("TOP-DOWN ECS ROGUELIKE SHOOTER WITH EVOLVING ALIEN DNA", p.width / 2, p.height / 2 - 60);
+
+    // Controls Box
+    p.fill(15, 23, 42, 230);
+    p.rectMode(p.CENTER);
+    p.rect(p.width / 2, p.height / 2 + 30, 520, 140, 8);
+
+    p.fill(250, 204, 21);
+    p.textSize(15);
+    p.text("CONTROLS:", p.width / 2, p.height / 2 - 20);
+    p.fill(203, 213, 225);
+    p.textSize(14);
+    p.text("WASD / ARROW KEYS : Move Character", p.width / 2, p.height / 2 + 5);
+    p.text("LEFT MOUSE / SPACE : Shoot Weapons", p.width / 2, p.height / 2 + 25);
+    p.text("KEY 'R' : Reload Weapon  |  KEY 'H' : Toggle Help Guide", p.width / 2, p.height / 2 + 45);
+
+    p.fill(34, 197, 94);
+    p.textSize(22);
+    p.text("PRESS SPACE OR CLICK TO START", p.width / 2, p.height / 2 + 140);
+    p.pop();
+    return;
+  }
+
+  // 8. Help Screen Overlay Modal
+  if (stats.isHelpOpen) {
+    p.push();
+    p.fill(5, 7, 12, 235);
+    p.rect(0, 0, p.width, p.height);
+
+    p.rectMode(p.CENTER);
+    p.fill(15, 23, 42, 250);
+    p.rect(p.width / 2, p.height / 2, 700, 500, 8);
+
+    p.textAlign(p.CENTER, p.TOP);
+    p.fill(6, 182, 212);
+    p.textSize(28);
+    p.textFont("monospace");
+    p.text("HIVE COLLAPSE - PLAYER GUIDE", p.width / 2, p.height / 2 - 220);
+
+    p.textAlign(p.LEFT, p.TOP);
+    p.fill(226, 232, 240);
+    p.textSize(14);
+
+    const startY = p.height / 2 - 160;
+    p.fill(250, 204, 21);
+    p.text("ENEMY TYPES (INTRODUCED PER WAVE):", p.width / 2 - 310, startY);
+    p.fill(226, 232, 240);
+    p.text("• WAVE 1 - SLASHERS (Red Circle) : Fast melee rushers.", p.width / 2 - 310, startY + 24);
+    p.text("• WAVE 2 - SHOOTERS (Purple Diamond) : Ranged bots firing energy bullets.", p.width / 2 - 310, startY + 44);
+    p.text("• WAVE 3 - TANKS (Orange Square) : Slow heavy beasts with 2.5x Health.", p.width / 2 - 310, startY + 64);
+    p.text("• WAVE 4+ - MIXED SWARM : Combined tactical waves of all types.", p.width / 2 - 310, startY + 84);
+
+    p.fill(250, 204, 21);
+    p.text("CORE MECHANICS:", p.width / 2 - 310, startY + 120);
+    p.fill(226, 232, 240);
+    p.text("• LIFESTEAL: Dealing damage heals player HP by 20%.", p.width / 2 - 310, startY + 144);
+    p.text("• FOG OF WAR: Enemies inside unexplored caves are hidden from sight.", p.width / 2 - 310, startY + 164);
+    p.text("• GENETIC ALGORITHMS: Fittest top 20% aliens evolve speed, HP, and heal rates.", p.width / 2 - 310, startY + 184);
+    p.text("• CELLULAR AUTOMATA: Cavern layouts procedurally smooth each wave.", p.width / 2 - 310, startY + 204);
+
+    p.textAlign(p.CENTER, p.CENTER);
+    p.fill(34, 197, 94);
+    p.textSize(18);
+    p.text("PRESS 'H' OR CLICK TO CLOSE HELP", p.width / 2, p.height / 2 + 200);
+    p.pop();
+  }
+
+  // 9. Game Over Screen Overlay
   if (stats.isGameOver) {
     p.push();
     p.fill(0, 0, 0, 220);
