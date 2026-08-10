@@ -1,5 +1,5 @@
 import { World, Entity } from "../ecs";
-import { Position, AI, DNA, Fitness, Health, PlayerTag, EnemyTag } from "../components";
+import { Position, Velocity, AI, DNA, Fitness, Health, EnemyType, Projectile, Lifetime, Sprite, Collider, PlayerTag, EnemyTag } from "../components";
 
 export function EnemyAISystem(world: World, _dt: number): void {
   // Find player entity
@@ -11,9 +11,12 @@ export function EnemyAISystem(world: World, _dt: number): void {
     playerPos = pos;
   });
 
-  world.query(Position, Health, AI, DNA, Fitness, EnemyTag).each((_entity, pos, health, ai, dna, fitness) => {
+  world.query(Position, Health, AI, DNA, Fitness, EnemyTag).each((enemyEntity, pos, health, ai, dna, fitness) => {
     fitness.timeSurvived += 1;
     fitness.distanceTraveled += 0.5; // Approximation per frame tick
+
+    const enemyTypeComp = world.getComponent(enemyEntity, EnemyType);
+    const archetype = enemyTypeComp ? enemyTypeComp.archetype : "slasher";
 
     if (ai.cooldownTimer > 0) {
       ai.cooldownTimer--;
@@ -54,12 +57,41 @@ export function EnemyAISystem(world: World, _dt: number): void {
     if (dist <= dna.visionRadius) {
       ai.target = playerEntity;
 
-      if (dist <= 25 && ai.cooldownTimer === 0) {
-        ai.state = "attack";
-        ai.cooldownTimer = dna.attackCooldown;
-        fitness.attackCount++;
+      if (archetype === "shooter") {
+        // Shooter enemy maintains range and fires projectiles
+        if (dist > 160) {
+          ai.state = "chase";
+        } else if (dist < 100) {
+          ai.state = "flee"; // Back up if player gets too close
+        } else {
+          ai.state = "idle";
+        }
+
+        // Shoot projectile at player
+        if (ai.cooldownTimer === 0) {
+          ai.cooldownTimer = dna.attackCooldown;
+          fitness.attackCount++;
+
+          const vx = (dx / dist) * 5;
+          const vy = (dy / dist) * 5;
+
+          const bullet = world.spawn();
+          world.addComponent(bullet, new Position(pos.x, pos.y));
+          world.addComponent(bullet, new Velocity(vx, vy));
+          world.addComponent(bullet, new Projectile(12, enemyEntity)); // 12 damage
+          world.addComponent(bullet, new Collider(5, false));
+          world.addComponent(bullet, new Lifetime(120, 120));
+          world.addComponent(bullet, new Sprite("#f43f5e", 8, "circle"));
+        }
       } else {
-        ai.state = "chase";
+        // Slasher / Tank melee attack
+        if (dist <= 25 && ai.cooldownTimer === 0) {
+          ai.state = "attack";
+          ai.cooldownTimer = dna.attackCooldown;
+          fitness.attackCount++;
+        } else {
+          ai.state = "chase";
+        }
       }
     } else {
       ai.state = "wander";

@@ -13,6 +13,8 @@ import {
   Steering,
   PlayerTag,
   EnemyTag,
+  EnemyType,
+  EnemyArchetype,
   Vision,
   Visibility,
   FogOfWarComponent,
@@ -94,17 +96,26 @@ class GameApp {
       const dna = this.currentEnemyPool[i]!;
       const spawn = this.cave.getFreeSpawnPoint();
 
+      // Pick archetype
+      const rand = Math.random();
+      const archetype: EnemyArchetype = rand < 0.5 ? "slasher" : rand < 0.85 ? "shooter" : "tank";
+
+      const maxHealth = archetype === "tank" ? dna.maxHealth * 2.5 : dna.maxHealth;
+      const speed = archetype === "tank" ? dna.speed * 0.6 : archetype === "slasher" ? dna.speed * 1.2 : dna.speed;
+      const radius = archetype === "tank" ? 16 : 10;
+
       const enemy = this.world.spawn();
       this.world.addComponent(enemy, new Position(spawn.x, spawn.y));
       this.world.addComponent(enemy, new Velocity(0, 0));
-      this.world.addComponent(enemy, new Health(dna.maxHealth, dna.maxHealth));
-      this.world.addComponent(enemy, new Collider(10, false));
+      this.world.addComponent(enemy, new Health(maxHealth, maxHealth));
+      this.world.addComponent(enemy, new Collider(radius, false));
       this.world.addComponent(enemy, new DNA(dna));
       this.world.addComponent(enemy, new Fitness());
       this.world.addComponent(enemy, new AI());
-      this.world.addComponent(enemy, new Steering(dna.speed));
+      this.world.addComponent(enemy, new Steering(speed));
+      this.world.addComponent(enemy, new EnemyType(archetype));
       this.world.addComponent(enemy, new Visibility()); // Fog of War visibility
-      this.world.addComponent(enemy, new Sprite("#ef4444", 16, "circle"));
+      this.world.addComponent(enemy, new Sprite("#ef4444", radius * 1.6, "circle"));
       this.world.addComponent(enemy, new EnemyTag());
     }
   }

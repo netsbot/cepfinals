@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { World } from "../ecs";
-import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag } from "../components";
+import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag, EnemyType } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export interface RenderStats {
@@ -87,26 +87,41 @@ export function RenderingSystem(
   });
 
   // 4. Draw Enemies (ONLY if Visibility === "visible")
-  world.query(Position, Health, Sprite, DNA, Visibility, EnemyTag).each((_e, pos, health, sprite, dna, vis) => {
+  world.query(Position, Health, Sprite, DNA, Visibility, EnemyTag).each((enemyEntity, pos, health, sprite, dna, vis) => {
     if (vis.state !== "visible") return; // Hidden in fog of war!
+
+    const enemyTypeComp = world.getComponent(enemyEntity, EnemyType);
+    const archetype = enemyTypeComp ? enemyTypeComp.archetype : "slasher";
 
     p.push();
     p.translate(pos.x, pos.y);
     p.noStroke();
 
-    // Color derived from Aggression (Red) & Speed (Yellow/Orange)
-    const r = p.map(dna.aggression, 0.1, 1.0, 200, 255);
-    const g = p.map(dna.speed, 1.0, 4.5, 60, 180);
-    p.fill(r, g, 30);
-    p.circle(0, 0, sprite.size);
+    if (archetype === "shooter") {
+      // Purple Diamond for Shooter
+      p.fill(168, 85, 247);
+      p.quad(0, -sprite.size, sprite.size * 0.8, 0, 0, sprite.size, -sprite.size * 0.8, 0);
+    } else if (archetype === "tank") {
+      // Large Orange Square for Tank
+      p.fill(249, 115, 22);
+      p.rectMode(p.CENTER);
+      p.rect(0, 0, sprite.size * 1.3, sprite.size * 1.3, 4);
+    } else {
+      // Crimson Circle / Triangle for Slasher
+      const r = p.map(dna.aggression, 0.1, 1.0, 200, 255);
+      const g = p.map(dna.speed, 1.0, 4.5, 60, 180);
+      p.fill(r, g, 30);
+      p.circle(0, 0, sprite.size);
+    }
 
     // Health bar above enemy
     if (health.current < health.max) {
       p.fill(15, 23, 42);
-      p.rect(-12, -sprite.size / 2 - 8, 24, 4);
+      p.rectMode(p.CORNER);
+      p.rect(-12, -sprite.size / 2 - 10, 24, 4);
       p.fill(239, 68, 68);
       const hpWidth = p.map(health.current, 0, health.max, 0, 24);
-      p.rect(-12, -sprite.size / 2 - 8, Math.max(0, hpWidth), 4);
+      p.rect(-12, -sprite.size / 2 - 10, Math.max(0, hpWidth), 4);
     }
     p.pop();
   });

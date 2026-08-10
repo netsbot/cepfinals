@@ -150,6 +150,12 @@ export class FogOfWarComponent {
   }
 }
 
+export type EnemyArchetype = "slasher" | "shooter" | "tank";
+
+export class EnemyType {
+  constructor(public archetype: EnemyArchetype = "slasher") {}
+}
+
 export class PlayerTag {}
 export class EnemyTag {}
 export class FogTag {}

@@ -65,6 +65,29 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
     }
   });
 
+  // 3. Bullet vs Player Collisions (Enemy Bullets)
+  if (playerPos && playerHealth && playerCollider) {
+    world.query(Position, Projectile, Collider).each((bulletEntity, bPos, proj, bCollider) => {
+      // Ignore player's own bullets
+      if (proj.owner !== null && world.hasComponent(proj.owner, PlayerTag)) return;
+
+      const dx = playerPos!.x - bPos.x;
+      const dy = playerPos!.y - bPos.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < playerCollider!.radius + bCollider.radius) {
+        playerHealth!.current = Math.max(0, playerHealth!.current - proj.damage);
+        world.despawn(bulletEntity);
+
+        // Credit damage to enemy fitness if owner alive
+        if (proj.owner !== null && world.isAlive(proj.owner)) {
+          const enemyFitness = world.getComponent(proj.owner, Fitness);
+          if (enemyFitness) enemyFitness.damageDealt += proj.damage;
+        }
+      }
+    });
+  }
+
   // 3. Enemy Attacks vs Player
   if (playerPos && playerHealth && playerCollider) {
     world.query(Position, Collider, AI, Fitness, EnemyTag).each((_enemyEntity, pos, collider, ai, fitness) => {
