@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hive-collapse",
+  "compatibility_date": "2026-01-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    {
+      "pattern": "cep.84914116.xyz",
+      "custom_domain": true
+    }
+  ]
+}
