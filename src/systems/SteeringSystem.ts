@@ -11,14 +11,14 @@ export function SteeringSystem(world: World, _dt: number, cave: CaveGenerator): 
     let forceX = 0;
     let forceY = 0;
 
-    // 1. Seek / Pursue or Flee target
-    if (ai.target !== null && (ai.state === "chase" || ai.state === "flee")) {
+    // 1. Seek / Pursue or Flee / Retreat target
+    if (ai.target !== null && (ai.state === "chase" || ai.state === "flee" || ai.state === "retreat")) {
       const targetPos = world.getComponent(ai.target, Position);
       if (targetPos) {
         let dx = targetPos.x - pos.x;
         let dy = targetPos.y - pos.y;
 
-        if (ai.state === "flee") {
+        if (ai.state === "flee" || ai.state === "retreat") {
           // Invert vector to run away from player
           dx = -dx;
           dy = -dy;

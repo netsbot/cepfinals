@@ -64,7 +64,7 @@ export class Fitness {
   }
 }
 
-export type AIState = "idle" | "chase" | "attack" | "flee" | "wander";
+export type AIState = "idle" | "chase" | "attack" | "flee" | "retreat" | "wander";
 
 export class AI {
   public state: AIState = "idle";

@@ -33,6 +33,8 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
     for (let i = 0; i < enemies.length; i++) {
       const enemy = enemies[i]!;
       if (enemy.health.current <= 0) continue;
+      if (proj.owner === enemy.entity) continue; // Ignore self-collision!
+      if (proj.owner !== null && world.hasComponent(proj.owner, EnemyTag)) continue; // Ignore friendly fire!
 
       const dx = enemy.pos.x - bPos.x;
       const dy = enemy.pos.y - bPos.y;

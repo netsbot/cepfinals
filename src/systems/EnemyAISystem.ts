@@ -39,17 +39,17 @@ export function EnemyAISystem(world: World, _dt: number): void {
     const dy = playerPos.y - pos.y;
     const dist = Math.hypot(dx, dy);
 
-    // Low HP Flee Behavior (< 35% HP)
+    // Low HP Retreat Behavior (< 35% HP)
     const isLowHp = health.current < health.max * 0.35;
     const isHealedEnough = health.current > health.max * 0.7;
 
-    if (ai.state === "flee" && !isHealedEnough) {
+    if (ai.state === "retreat" && !isHealedEnough) {
       ai.target = playerEntity;
-      return; // Maintain flee state until recovered
+      return; // Maintain retreat state until recovered
     }
 
     if (isLowHp && dist <= dna.visionRadius) {
-      ai.state = "flee";
+      ai.state = "retreat";
       ai.target = playerEntity;
       return;
     }
@@ -59,10 +59,10 @@ export function EnemyAISystem(world: World, _dt: number): void {
 
       if (archetype === "shooter") {
         // Shooter enemy maintains range and fires projectiles
-        if (dist > 160) {
+        if (dist > 180) {
           ai.state = "chase";
-        } else if (dist < 100) {
-          ai.state = "flee"; // Back up if player gets too close
+        } else if (dist < 110) {
+          ai.state = "flee"; // Kiting backup
         } else {
           ai.state = "idle";
         }
@@ -72,15 +72,20 @@ export function EnemyAISystem(world: World, _dt: number): void {
           ai.cooldownTimer = dna.attackCooldown;
           fitness.attackCount++;
 
-          const vx = (dx / dist) * 5;
-          const vy = (dy / dist) * 5;
+          const bulletSpeed = 5.5;
+          const vx = (dx / dist) * bulletSpeed;
+          const vy = (dy / dist) * bulletSpeed;
+
+          // Spawn bullet offset ahead of shooter to prevent clipping
+          const spawnX = pos.x + (dx / dist) * 16;
+          const spawnY = pos.y + (dy / dist) * 16;
 
           const bullet = world.spawn();
-          world.addComponent(bullet, new Position(pos.x, pos.y));
+          world.addComponent(bullet, new Position(spawnX, spawnY));
           world.addComponent(bullet, new Velocity(vx, vy));
           world.addComponent(bullet, new Projectile(12, enemyEntity)); // 12 damage
           world.addComponent(bullet, new Collider(5, false));
-          world.addComponent(bullet, new Lifetime(120, 120));
+          world.addComponent(bullet, new Lifetime(140, 140));
           world.addComponent(bullet, new Sprite("#f43f5e", 8, "circle"));
         }
       } else {
