@@ -420,8 +420,8 @@ new p5((p: p5) => {
     // Get player stats & check player death
     let playerHp = 0;
     let playerMaxHp = 100;
-    let playerAmmo = 5;
-    let playerMaxAmmo = 5;
+    let playerAmmo = 12;
+    let playerMaxAmmo = 12;
     let isReloading = false;
     let playerLifesteal = 0.20;
     let playerLevel = 1;
