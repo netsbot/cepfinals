@@ -47,6 +47,7 @@ class GameApp {
   public isStartScreen: boolean = true;
   public isHelpOpen: boolean = false;
   public isLevelUpOpen: boolean = false;
+  public isDnaModalOpen: boolean = false;
   public trackedLevel: number = 1;
   public playerMoveSpeed: number = 3.5;
 
@@ -300,6 +301,7 @@ game.initGame();
 
 const keys = new Set<string>();
 let helpKeyPressedLast = false;
+let dnaKeyPressedLast = false;
 
 window.addEventListener("keydown", (e) => {
   keys.add(e.code);
@@ -308,12 +310,21 @@ window.addEventListener("keydown", (e) => {
     game.isHelpOpen = !game.isHelpOpen;
     helpKeyPressedLast = true;
   }
+  if (e.code === "KeyD" && !dnaKeyPressedLast) {
+    game.isDnaModalOpen = !game.isDnaModalOpen;
+    const modal = document.getElementById("dna-modal");
+    if (modal) modal.style.display = game.isDnaModalOpen ? "flex" : "none";
+    dnaKeyPressedLast = true;
+  }
 });
 
 window.addEventListener("keyup", (e) => {
   keys.delete(e.code);
   if (e.code === "KeyH") {
     helpKeyPressedLast = false;
+  }
+  if (e.code === "KeyD") {
+    dnaKeyPressedLast = false;
   }
 });
 
@@ -329,13 +340,25 @@ new p5((p: p5) => {
     canvas.elt.oncontextmenu = (e: MouseEvent) => e.preventDefault(); // Disable context menu
     p.frameRate(60);
 
-    // External DOM Help Button listener
+    // External DOM Button Listeners
     const helpBtn = document.getElementById("btn-help");
     if (helpBtn) {
       helpBtn.addEventListener("click", () => {
         game.isHelpOpen = !game.isHelpOpen;
       });
     }
+
+    const dnaBtn = document.getElementById("btn-dna");
+    const dnaModal = document.getElementById("dna-modal");
+    const closeDnaBtn = document.getElementById("btn-close-dna");
+
+    const toggleDna = () => {
+      game.isDnaModalOpen = !game.isDnaModalOpen;
+      if (dnaModal) dnaModal.style.display = game.isDnaModalOpen ? "flex" : "none";
+    };
+
+    if (dnaBtn) dnaBtn.addEventListener("click", toggleDna);
+    if (closeDnaBtn) closeDnaBtn.addEventListener("click", toggleDna);
   };
 
   p.mousePressed = () => {
@@ -345,6 +368,12 @@ new p5((p: p5) => {
     }
     if (game.isHelpOpen) {
       game.isHelpOpen = false;
+      return;
+    }
+    if (game.isDnaModalOpen) {
+      game.isDnaModalOpen = false;
+      const modal = document.getElementById("dna-modal");
+      if (modal) modal.style.display = "none";
       return;
     }
   };
@@ -367,7 +396,7 @@ new p5((p: p5) => {
     }
 
     // Handle Player WASD Movement Input directly on Velocity component
-    const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver && !game.isLevelUpOpen;
+    const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver && !game.isLevelUpOpen && !game.isDnaModalOpen;
 
     if (canPlay && game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const vel = game.world.getComponent(game.playerEntity, Velocity);
@@ -410,19 +439,34 @@ new p5((p: p5) => {
     // Maintain deferred despawns at system boundary
     game.world.maintain();
 
-    // Check enemy count for wave progression
+    // Check enemy count for wave progression & collect archetype DNA metrics
     let aliveEnemies = 0;
-    let topSpeed = 0;
-    let topHealth = 0;
-    let topAggression = 0;
-    let topHealRate = 0;
 
-    game.world.query(DNA, EnemyTag).each((_e, dna) => {
+    // Split Archetype Stat Aggregates
+    const slasherStats = { maxSpeed: 0, maxAgg: 0, maxHeal: 0, maxHp: 0 };
+    const shooterStats = { maxSpeed: 0, minCooldown: 999, maxVision: 0, maxDodge: 0 };
+    const tankStats = { maxHp: 0, maxDodge: 0, maxVision: 0, maxSpeed: 0 };
+
+    game.world.query(DNA, EnemyType, EnemyTag).each((_e, dna, enemyType) => {
       aliveEnemies++;
-      if (dna.speed > topSpeed) topSpeed = dna.speed;
-      if (dna.maxHealth > topHealth) topHealth = dna.maxHealth;
-      if (dna.aggression > topAggression) topAggression = dna.aggression;
-      if (dna.healRate > topHealRate) topHealRate = dna.healRate;
+      const arch = enemyType.archetype;
+
+      if (arch === "slasher") {
+        if (dna.speed > slasherStats.maxSpeed) slasherStats.maxSpeed = dna.speed;
+        if (dna.aggression > slasherStats.maxAgg) slasherStats.maxAgg = dna.aggression;
+        if (dna.healRate > slasherStats.maxHeal) slasherStats.maxHeal = dna.healRate;
+        if (dna.maxHealth > slasherStats.maxHp) slasherStats.maxHp = dna.maxHealth;
+      } else if (arch === "shooter") {
+        if (dna.speed > shooterStats.maxSpeed) shooterStats.maxSpeed = dna.speed;
+        if (dna.attackCooldown < shooterStats.minCooldown) shooterStats.minCooldown = dna.attackCooldown;
+        if (dna.visionRadius > shooterStats.maxVision) shooterStats.maxVision = dna.visionRadius;
+        if (dna.dodgeChance > shooterStats.maxDodge) shooterStats.maxDodge = dna.dodgeChance;
+      } else if (arch === "tank") {
+        if (dna.maxHealth > tankStats.maxHp) tankStats.maxHp = dna.maxHealth;
+        if (dna.dodgeChance > tankStats.maxDodge) tankStats.maxDodge = dna.dodgeChance;
+        if (dna.visionRadius > tankStats.maxVision) tankStats.maxVision = dna.visionRadius;
+        if (dna.speed > tankStats.maxSpeed) tankStats.maxSpeed = dna.speed;
+      }
     });
 
     if (aliveEnemies === 0 && !game.isWaveTransitioning && canPlay) {
@@ -476,14 +520,15 @@ new p5((p: p5) => {
       isGameOver: game.isGameOver,
       isStartScreen: game.isStartScreen,
       isHelpOpen: game.isHelpOpen,
-      topSpeed,
-      topHealth,
-      topAggression,
-      topHealRate,
+      topSpeed: slasherStats.maxSpeed,
+      topHealth: tankStats.maxHp,
+      topAggression: slasherStats.maxAgg,
+      topHealRate: slasherStats.maxHeal,
     };
 
-    // Update External DOM HUD Sidebar
+    // Update External DOM HUD Sidebar & DNA Lab Split Metrics
     updateDomHud(stats, playerLevel, playerLevel - 1, playerLifesteal);
+    updateDnaModalHud(slasherStats, shooterStats, tankStats);
 
     // Render Canvas
     RenderingSystem(game.world, p, game.cave, stats);
@@ -505,10 +550,6 @@ function updateDomHud(
   const waveEl = document.getElementById("hud-wave");
   const waveTypeEl = document.getElementById("hud-wave-type");
   const enemiesEl = document.getElementById("hud-enemies");
-  const speedEl = document.getElementById("hud-top-speed");
-  const topHpEl = document.getElementById("hud-top-hp");
-  const aggEl = document.getElementById("hud-top-aggression");
-  const healEl = document.getElementById("hud-top-heal");
 
   if (levelEl) levelEl.textContent = `${level}`;
   if (perksEl) perksEl.textContent = `${perksEarned}`;
@@ -531,8 +572,40 @@ function updateDomHud(
     else waveTypeEl.textContent = "MIXED SWARM";
   }
   if (enemiesEl) enemiesEl.textContent = `${stats.enemiesRemaining}`;
-  if (speedEl) speedEl.textContent = stats.topSpeed.toFixed(2);
-  if (topHpEl) topHpEl.textContent = stats.topHealth.toFixed(0);
-  if (aggEl) aggEl.textContent = `${(stats.topAggression * 100).toFixed(0)}%`;
-  if (healEl) healEl.textContent = `${stats.topHealRate.toFixed(2)} HP/f`;
+}
+
+function updateDnaModalHud(
+  slasher: { maxSpeed: number; maxAgg: number; maxHeal: number; maxHp: number },
+  shooter: { maxSpeed: number; minCooldown: number; maxVision: number; maxDodge: number },
+  tank: { maxHp: number; maxDodge: number; maxVision: number; maxSpeed: number }
+): void {
+  // Slasher
+  const sSpd = document.getElementById("dna-slasher-speed");
+  const sAgg = document.getElementById("dna-slasher-agg");
+  const sHeal = document.getElementById("dna-slasher-heal");
+  const sHp = document.getElementById("dna-slasher-hp");
+  if (sSpd) sSpd.textContent = slasher.maxSpeed.toFixed(2);
+  if (sAgg) sAgg.textContent = `${(slasher.maxAgg * 100).toFixed(0)}%`;
+  if (sHeal) sHeal.textContent = `${slasher.maxHeal.toFixed(2)} HP/f`;
+  if (sHp) sHp.textContent = slasher.maxHp.toFixed(0);
+
+  // Shooter
+  const shSpd = document.getElementById("dna-shooter-speed");
+  const shCd = document.getElementById("dna-shooter-cooldown");
+  const shVis = document.getElementById("dna-shooter-vision");
+  const shDodge = document.getElementById("dna-shooter-dodge");
+  if (shSpd) shSpd.textContent = shooter.maxSpeed.toFixed(2);
+  if (shCd) shCd.textContent = shooter.minCooldown === 999 ? "0f" : `${shooter.minCooldown}f`;
+  if (shVis) shVis.textContent = shooter.maxVision.toFixed(0);
+  if (shDodge) shDodge.textContent = `${(shooter.maxDodge * 100).toFixed(0)}%`;
+
+  // Tank
+  const tHp = document.getElementById("dna-tank-hp");
+  const tDodge = document.getElementById("dna-tank-dodge");
+  const tVis = document.getElementById("dna-tank-vision");
+  const tSpd = document.getElementById("dna-tank-speed");
+  if (tHp) tHp.textContent = tank.maxHp.toFixed(0);
+  if (tDodge) tDodge.textContent = `${(tank.maxDodge * 100).toFixed(0)}%`;
+  if (tVis) tVis.textContent = tank.maxVision.toFixed(0);
+  if (tSpd) tSpd.textContent = tank.maxSpeed.toFixed(2);
 }
