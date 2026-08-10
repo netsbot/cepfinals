@@ -1,17 +1,25 @@
-import { EnemyDNA, DNA } from "../components";
+import { EnemyDNA, DNA, EnemyArchetype } from "../components";
 
 export class GeneticAlgorithmSystem {
-  public static evolvePopulation(parentDNAs: { dna: EnemyDNA; score: number }[], populationSize: number): DNA[] {
-    if (parentDNAs.length === 0) {
+  public static evolvePopulation(
+    parentDNAs: { dna: EnemyDNA; score: number; archetype: EnemyArchetype }[],
+    populationSize: number,
+    targetArchetype: EnemyArchetype = "slasher"
+  ): DNA[] {
+    // Filter parents by matching archetype if available, or fall back to full pool
+    const matchingParents = parentDNAs.filter((p) => p.archetype === targetArchetype);
+    const pool = matchingParents.length >= 2 ? matchingParents : parentDNAs;
+
+    if (pool.length === 0) {
       return Array.from({ length: populationSize }, () => new DNA());
     }
 
     // Sort by fitness score descending
-    parentDNAs.sort((a, b) => b.score - a.score);
+    pool.sort((a, b) => b.score - a.score);
 
     // Elitism: Top 20% survive directly
-    const eliteCount = Math.max(1, Math.floor(parentDNAs.length * 0.2));
-    const elites = parentDNAs.slice(0, eliteCount).map((item) => item.dna);
+    const eliteCount = Math.max(1, Math.floor(pool.length * 0.2));
+    const elites = pool.slice(0, eliteCount).map((item) => item.dna);
 
     const nextGeneration: DNA[] = [];
 
@@ -24,7 +32,7 @@ export class GeneticAlgorithmSystem {
         const parentA = elites[Math.floor(Math.random() * elites.length)]!;
         const parentB = elites[Math.floor(Math.random() * elites.length)]!;
         const childDNA = GeneticAlgorithmSystem.crossover(parentA, parentB);
-        GeneticAlgorithmSystem.mutate(childDNA, 0.1); // 10% mutation rate for visible gameplay evolution
+        GeneticAlgorithmSystem.mutate(childDNA, targetArchetype, 0.15); // Role-biased mutation rate
         nextGeneration.push(childDNA);
       }
     }
@@ -44,27 +52,41 @@ export class GeneticAlgorithmSystem {
     });
   }
 
-  private static mutate(dna: DNA, mutationRate: number = 0.1): void {
-    if (Math.random() < mutationRate) {
-      dna.speed = Math.max(1.0, Math.min(5.0, dna.speed + (Math.random() * 0.8 - 0.4)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.maxHealth = Math.max(20, Math.min(200, dna.maxHealth + Math.floor(Math.random() * 30 - 15)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.aggression = Math.max(0.1, Math.min(1.0, dna.aggression + (Math.random() * 0.2 - 0.1)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.visionRadius = Math.max(80, Math.min(350, dna.visionRadius + (Math.random() * 40 - 20)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.attackCooldown = Math.max(15, Math.min(90, dna.attackCooldown + Math.floor(Math.random() * 10 - 5)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.dodgeChance = Math.max(0.0, Math.min(0.6, dna.dodgeChance + (Math.random() * 0.1 - 0.05)));
-    }
-    if (Math.random() < mutationRate) {
-      dna.healRate = Math.max(0.05, Math.min(0.5, dna.healRate + (Math.random() * 0.1 - 0.05)));
+  private static mutate(dna: DNA, archetype: EnemyArchetype, mutationRate: number = 0.15): void {
+    // Role-Biased Genetic Evolution
+    if (archetype === "shooter") {
+      // Shooter (ADC): Priority on Attack Speed (lower cooldown), Kiting Speed, and Vision
+      if (Math.random() < mutationRate * 1.8) {
+        dna.attackCooldown = Math.max(12, Math.min(60, dna.attackCooldown + Math.floor(Math.random() * 8 - 5)));
+      }
+      if (Math.random() < mutationRate * 1.4) {
+        dna.speed = Math.max(1.8, Math.min(4.5, dna.speed + (Math.random() * 0.6 - 0.2)));
+      }
+      if (Math.random() < mutationRate * 1.4) {
+        dna.visionRadius = Math.max(180, Math.min(380, dna.visionRadius + (Math.random() * 50 - 20)));
+      }
+    } else if (archetype === "tank") {
+      // Tank (Roamer): Priority on Max Health, Body Size, Dodge Chance, and Wide Patrol Vision
+      if (Math.random() < mutationRate * 1.8) {
+        dna.maxHealth = Math.max(80, Math.min(300, dna.maxHealth + Math.floor(Math.random() * 40 - 15)));
+      }
+      if (Math.random() < mutationRate * 1.4) {
+        dna.dodgeChance = Math.max(0.05, Math.min(0.45, dna.dodgeChance + (Math.random() * 0.1 - 0.03)));
+      }
+      if (Math.random() < mutationRate * 1.4) {
+        dna.visionRadius = Math.max(220, Math.min(420, dna.visionRadius + (Math.random() * 60 - 20)));
+      }
+    } else {
+      // Slasher (Top Laner): Priority on Aggressive Rush Speed, 1v1 Trade Damage, and Health Regen
+      if (Math.random() < mutationRate * 1.8) {
+        dna.speed = Math.max(2.2, Math.min(5.2, dna.speed + (Math.random() * 0.8 - 0.3)));
+      }
+      if (Math.random() < mutationRate * 1.5) {
+        dna.aggression = Math.max(0.4, Math.min(1.0, dna.aggression + (Math.random() * 0.3 - 0.1)));
+      }
+      if (Math.random() < mutationRate * 1.5) {
+        dna.healRate = Math.max(0.1, Math.min(0.8, dna.healRate + (Math.random() * 0.15 - 0.05)));
+      }
     }
   }
 }

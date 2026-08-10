@@ -251,13 +251,14 @@ class GameApp {
     }
     this.triggerLevelUpModal();
 
-    // Collect enemy performance data for Genetic Algorithm evolution
-    const parentData: { dna: DNA; score: number }[] = [];
+    // Collect enemy performance data with Archetype info for Genetic Evolution
+    const parentData: { dna: DNA; score: number; archetype: EnemyArchetype }[] = [];
 
-    this.world.query(DNA, Fitness, EnemyTag).each((_e, dna, fitness) => {
+    this.world.query(DNA, Fitness, EnemyType, EnemyTag).each((_e, dna, fitness, enemyType) => {
       parentData.push({
         dna,
-        score: fitness.computeScore(),
+        score: fitness.computeScore(enemyType.archetype),
+        archetype: enemyType.archetype,
       });
     });
 
@@ -265,7 +266,7 @@ class GameApp {
     this.wave++;
     this.enemyCountPerWave += 2;
 
-    // Evolve next generation
+    // Evolve next generation with archetype-specific fitness weighting & mutations
     this.currentEnemyPool = GeneticAlgorithmSystem.evolvePopulation(
       parentData,
       this.enemyCountPerWave

@@ -58,11 +58,11 @@ export function EnemyAISystem(world: World, _dt: number): void {
       ai.target = playerEntity;
 
       if (archetype === "shooter") {
-        // Shooter enemy maintains range and fires projectiles
-        if (dist > 180) {
+        // Shooter (ADC): Strict Kiting & Max Firing Range Spacing
+        if (dist > 200) {
           ai.state = "chase";
-        } else if (dist < 110) {
-          ai.state = "flee"; // Kiting backup
+        } else if (dist < 130) {
+          ai.state = "flee"; // Back up to maintain ADC kiting distance
         } else {
           ai.state = "idle";
         }
@@ -83,13 +83,23 @@ export function EnemyAISystem(world: World, _dt: number): void {
           const bullet = world.spawn();
           world.addComponent(bullet, new Position(spawnX, spawnY));
           world.addComponent(bullet, new Velocity(vx, vy));
-          world.addComponent(bullet, new Projectile(6, enemyEntity)); // 6 damage (reduced from 12)
+          world.addComponent(bullet, new Projectile(6, enemyEntity)); // 6 damage
           world.addComponent(bullet, new Collider(5, false));
           world.addComponent(bullet, new Lifetime(140, 140));
           world.addComponent(bullet, new Sprite("#f43f5e", 8, "circle"));
         }
+      } else if (archetype === "tank") {
+        // Tank (Roamer / Body Blocker): Position between Player and Shooter allies to soak hits!
+        ai.state = "chase";
+
+        // Melee punch if close
+        if (dist <= 30 && ai.cooldownTimer === 0) {
+          ai.state = "attack";
+          ai.cooldownTimer = dna.attackCooldown;
+          fitness.attackCount++;
+        }
       } else {
-        // Slasher / Tank melee attack
+        // Slasher (Top Laner): Relentless 1v1 aggressive rushdown
         if (dist <= 25 && ai.cooldownTimer === 0) {
           ai.state = "attack";
           ai.cooldownTimer = dna.attackCooldown;

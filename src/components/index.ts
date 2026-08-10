@@ -53,14 +53,32 @@ export class Fitness {
   public distanceTraveled: number = 0;
   public hpHealed: number = 0;
 
-  public computeScore(): number {
-    return (
-      this.damageDealt * 5.0 +
-      this.timeSurvived * 0.1 +
-      this.attackCount * 2.0 +
-      this.hpHealed * 1.5 +
-      this.distanceTraveled * 0.01
-    );
+  public computeScore(archetype: EnemyArchetype = "slasher"): number {
+    if (archetype === "shooter") {
+      // Shooter (ADC): Value Ranged DPS, High Attack Count, and Kiting Distance
+      return (
+        this.damageDealt * 4.0 +
+        this.attackCount * 8.0 +
+        this.distanceTraveled * 1.2 +
+        this.timeSurvived * 1.0
+      );
+    } else if (archetype === "tank") {
+      // Tank (Roamer): Value Survival Duration, Damage Tanked, and Roaming Coverage
+      return (
+        this.timeSurvived * 2.5 +
+        this.distanceTraveled * 1.5 +
+        this.damageDealt * 1.5 +
+        this.hpHealed * 2.0
+      );
+    } else {
+      // Slasher (Top Laner): Value Aggressive Melee Trade & HP Recovery/Sustain
+      return (
+        this.damageDealt * 3.0 +
+        this.hpHealed * 3.5 +
+        this.distanceTraveled * 0.8 +
+        this.timeSurvived * 1.0
+      );
+    }
   }
 }
 

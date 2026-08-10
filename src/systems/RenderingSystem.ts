@@ -253,12 +253,12 @@ export function RenderingSystem(
 
     const startY = p.height / 2 - 160;
     p.fill(250, 204, 21);
-    p.text("ENEMY TYPES (INTRODUCED PER WAVE):", p.width / 2 - 310, startY);
+    p.text("ENEMY TYPES (EVOLVE BY ROLE):", p.width / 2 - 310, startY);
     p.fill(226, 232, 240);
-    p.text("• WAVE 1 - SLASHERS (Red Circle) : Fast melee rushers.", p.width / 2 - 310, startY + 24);
-    p.text("• WAVE 2 - SHOOTERS (Purple Diamond) : Ranged bots firing energy bullets.", p.width / 2 - 310, startY + 44);
-    p.text("• WAVE 3 - TANKS (Orange Square) : Slow heavy beasts with 2.5x Health.", p.width / 2 - 310, startY + 64);
-    p.text("• WAVE 4+ - MIXED SWARM : Combined tactical waves of all types.", p.width / 2 - 310, startY + 84);
+    p.text("• WAVE 1 - SLASHERS (Top Laners) : Aggressive 1v1 rushers. Evolve Speed & Heal Regen.", p.width / 2 - 310, startY + 24);
+    p.text("• WAVE 2 - SHOOTERS (ADCs) : Ranged backliners. Evolve Attack Speed & Kiting.", p.width / 2 - 310, startY + 44);
+    p.text("• WAVE 3 - TANKS (Roamers) : Heavy body blockers. Evolve Max HP & Patrol Vision.", p.width / 2 - 310, startY + 64);
+    p.text("• WAVE 4+ - MIXED SWARM : Combined tactical teamfight swarms.", p.width / 2 - 310, startY + 84);
 
     p.fill(250, 204, 21);
     p.text("CORE MECHANICS:", p.width / 2 - 310, startY + 120);
