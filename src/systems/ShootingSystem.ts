@@ -48,11 +48,8 @@ export function ShootingSystem(world: World, _dt: number, input: ShootingInput):
                 health.current = Math.min(health.max, health.current + damageDealt * weapon.lifesteal);
               }
 
-              // Refill ammo on kill
+              // Despawn enemy on kill (no ammo refill for melee)
               if (eHp.current <= 0) {
-                weapon.ammo = weapon.maxAmmo;
-                weapon.isReloading = false;
-                weapon.reloadTimer = 0;
                 world.despawn(enemyEntity);
               }
             }
