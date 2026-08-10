@@ -223,7 +223,7 @@ class GameApp {
   }
 
   public handleWaveEnd(): void {
-    // 1. Level up player & trigger Perk Reward choice!
+    // 1. Level up player strictly ONCE per wave clear & trigger Perk Reward choice!
     if (this.playerEntity !== null && this.world.isAlive(this.playerEntity)) {
       const xpComp = this.world.getComponent(this.playerEntity, PlayerXp);
       if (xpComp) {
@@ -346,15 +346,6 @@ new p5((p: p5) => {
       }
     }
 
-    // Check for Player Level Up
-    if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
-      const xpComp = game.world.getComponent(game.playerEntity, PlayerXp);
-      if (xpComp && xpComp.level > game.trackedLevel) {
-        game.trackedLevel = xpComp.level;
-        game.triggerLevelUpModal();
-      }
-    }
-
     // Handle Player WASD Movement Input directly on Velocity component
     const canPlay = !game.isStartScreen && !game.isHelpOpen && !game.isGameOver && !game.isLevelUpOpen;
 
@@ -425,8 +416,6 @@ new p5((p: p5) => {
     let isReloading = false;
     let playerLifesteal = 0.20;
     let playerLevel = 1;
-    let playerXpVal = 0;
-    let playerXpMax = 100;
 
     if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
       const hp = game.world.getComponent(game.playerEntity, Health);
@@ -452,8 +441,6 @@ new p5((p: p5) => {
       }
       if (xp) {
         playerLevel = xp.level;
-        playerXpVal = xp.currentXp;
-        playerXpMax = xp.xpToNextLevel;
       }
     }
 
@@ -475,7 +462,7 @@ new p5((p: p5) => {
     };
 
     // Update External DOM HUD Sidebar
-    updateDomHud(stats, playerLevel, playerXpVal, playerXpMax, playerLifesteal);
+    updateDomHud(stats, playerLevel, playerLevel - 1, playerLifesteal);
 
     // Render Canvas
     RenderingSystem(game.world, p, game.cave, stats);
@@ -485,13 +472,11 @@ new p5((p: p5) => {
 function updateDomHud(
   stats: RenderStats,
   level: number,
-  xp: number,
-  xpMax: number,
+  perksEarned: number,
   lifesteal: number
 ): void {
   const levelEl = document.getElementById("hud-level");
-  const xpEl = document.getElementById("hud-xp");
-  const xpBarEl = document.getElementById("hud-xp-bar");
+  const perksEl = document.getElementById("hud-perks");
   const hpEl = document.getElementById("hud-hp");
   const hpBarEl = document.getElementById("hud-hp-bar");
   const ammoEl = document.getElementById("hud-ammo");
@@ -505,11 +490,7 @@ function updateDomHud(
   const healEl = document.getElementById("hud-top-heal");
 
   if (levelEl) levelEl.textContent = `${level}`;
-  if (xpEl) xpEl.textContent = `${xp}/${xpMax}`;
-  if (xpBarEl) {
-    const pct = Math.max(0, Math.min(100, (xp / xpMax) * 100));
-    xpBarEl.style.width = `${pct}%`;
-  }
+  if (perksEl) perksEl.textContent = `${perksEarned}`;
   if (hpEl) hpEl.textContent = `${Math.ceil(stats.playerHp)}/${stats.playerMaxHp}`;
   if (hpBarEl) {
     const pct = Math.max(0, Math.min(100, (stats.playerHp / stats.playerMaxHp) * 100));

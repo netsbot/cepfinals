@@ -1,5 +1,5 @@
 import { World, Entity } from "../ecs";
-import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, DNA, Weapon, EnemyType, PlayerXp } from "../components";
+import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, DNA, Weapon } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator): void {
@@ -8,14 +8,12 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
   let playerHealth: Health | null = null;
   let playerWeapon: Weapon | null = null;
   let playerCollider: Collider | null = null;
-  let playerXpComp: PlayerXp | null = null;
 
-  world.query(Position, Health, Collider, Weapon, PlayerTag).each((entity, pos, health, collider, weapon) => {
+  world.query(Position, Health, Collider, Weapon, PlayerTag).each((_e, pos, health, collider, weapon) => {
     playerPos = pos;
     playerHealth = health;
     playerCollider = collider;
     playerWeapon = weapon;
-    playerXpComp = world.getComponent(entity, PlayerXp) ?? null;
   });
 
   // 1. Bullet Wall Despawn
@@ -67,14 +65,6 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
             (playerWeapon as Weapon).ammo = (playerWeapon as Weapon).maxAmmo;
             (playerWeapon as Weapon).isReloading = false;
             (playerWeapon as Weapon).reloadTimer = 0;
-          }
-
-          // Award XP on kill
-          if (playerXpComp) {
-            const enemyType = world.getComponent(enemy.entity, EnemyType);
-            const arch = enemyType ? enemyType.archetype : "slasher";
-            const xpVal = arch === "tank" ? 70 : arch === "shooter" ? 40 : 25;
-            playerXpComp.addXp(xpVal);
           }
 
           world.despawn(enemy.entity);
