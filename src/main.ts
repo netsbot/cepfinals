@@ -22,6 +22,7 @@ import {
   PlayerXp,
   Perk,
   PerkType,
+  MeleeAttack,
 } from "./components";
 import { CaveGenerator } from "./world/CaveGenerator";
 import { MovementSystem } from "./systems/MovementSystem";
@@ -68,7 +69,7 @@ class GameApp {
     this.world.addComponent(this.fogEntity, new FogOfWarComponent(60, 40));
     this.world.addComponent(this.fogEntity, new FogTag());
 
-    // 3. Spawn Player with Vision Component & PlayerXp
+    // 3. Spawn Player with Vision Component, PlayerXp & MeleeAttack
     const playerSpawn = this.cave.getFreeSpawnPoint();
     this.playerEntity = this.world.spawn();
     this.world.addComponent(this.playerEntity, new Position(playerSpawn.x, playerSpawn.y));
@@ -78,6 +79,7 @@ class GameApp {
     this.world.addComponent(this.playerEntity, new Weapon());
     this.world.addComponent(this.playerEntity, new Vision(12)); // 12 tile vision radius
     this.world.addComponent(this.playerEntity, new PlayerXp());
+    this.world.addComponent(this.playerEntity, new MeleeAttack());
     this.world.addComponent(this.playerEntity, new Sprite("#38bdf8", 20, "circle"));
     this.world.addComponent(this.playerEntity, new PlayerTag());
 
@@ -113,7 +115,7 @@ class GameApp {
     // Perk Pool
     const allPerks: Perk[] = [
       { id: "lifesteal", title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
-      { id: "max_ammo", title: "EXTENDED MAG", desc: "+3 Max Magazine Capacity & Instant Refill" },
+      { id: "max_ammo", title: "SLEIGHT OF HAND", desc: "+30% Reload Speed (Faster magazine reload)" },
       { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Attack Speed (Reduces shot cooldown)" },
       { id: "damage", title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
       { id: "speed", title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
@@ -156,11 +158,7 @@ class GameApp {
         if (wpn) wpn.lifesteal += 0.10;
         break;
       case "max_ammo":
-        if (wpn) {
-          wpn.maxAmmo += 3;
-          wpn.ammo = wpn.maxAmmo;
-          wpn.isReloading = false;
-        }
+        if (wpn) wpn.reloadTime = Math.max(30, Math.floor(wpn.reloadTime * 0.7));
         break;
       case "fire_rate":
         if (wpn) wpn.fireRate = Math.max(2, Math.floor(wpn.fireRate * 0.75));
@@ -307,6 +305,7 @@ new p5((p: p5) => {
   p.setup = () => {
     const canvas = p.createCanvas(1200, 800);
     canvas.parent("canvas-container");
+    canvas.elt.oncontextmenu = (e: MouseEvent) => e.preventDefault(); // Disable context menu
     p.frameRate(60);
 
     // External DOM Help Button listener
@@ -379,7 +378,8 @@ new p5((p: p5) => {
       ShootingSystem(game.world, dt, {
         mouseX: p.mouseX,
         mouseY: p.mouseY,
-        isShooting: Boolean(p.mouseIsPressed || keys.has("Space")),
+        isShooting: Boolean(p.mouseIsPressed && p.mouseButton === p.LEFT),
+        isMelee: Boolean(p.mouseIsPressed && p.mouseButton === p.RIGHT),
         isReloading: keys.has("KeyR"),
       });
       CollisionSystem(game.world, dt, game.cave);
@@ -411,8 +411,8 @@ new p5((p: p5) => {
     // Get player stats & check player death
     let playerHp = 0;
     let playerMaxHp = 100;
-    let playerAmmo = 12;
-    let playerMaxAmmo = 12;
+    let playerAmmo = 5;
+    let playerMaxAmmo = 5;
     let isReloading = false;
     let playerLifesteal = 0.20;
     let playerLevel = 1;

@@ -1,6 +1,6 @@
 import p5 from "p5";
 import { World } from "../ecs";
-import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag, EnemyType } from "../components";
+import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag, EnemyType, MeleeAttack } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export interface RenderStats {
@@ -149,7 +149,9 @@ export function RenderingSystem(
   });
 
   // 5. Draw Player (Solid Electric Cyan)
-  world.query(Position, Health, Sprite, PlayerTag).each((_e, pos, health, sprite) => {
+  world.query(Position, Health, Sprite, PlayerTag).each((playerEntity, pos, health, sprite) => {
+    const melee = world.getComponent(playerEntity, MeleeAttack);
+
     p.push();
     p.translate(pos.x, pos.y);
     p.noStroke();
@@ -165,6 +167,21 @@ export function RenderingSystem(
     p.triangle(6, -4, 16, 0, 6, 4);
 
     p.pop();
+
+    // Visual Melee Slash Arc Effect
+    if (melee && melee.slashAnimTimer > 0) {
+      p.push();
+      p.translate(pos.x, pos.y);
+      p.rotate(melee.slashAngle);
+      p.noFill();
+      p.stroke(6, 182, 212, p.map(melee.slashAnimTimer, 0, 12, 0, 255));
+      p.strokeWeight(4);
+      p.arc(0, 0, melee.range * 2, melee.range * 2, -p.QUARTER_PI, p.QUARTER_PI);
+      p.stroke(255, 255, 255, p.map(melee.slashAnimTimer, 0, 12, 0, 255));
+      p.strokeWeight(2);
+      p.arc(0, 0, melee.range * 1.8, melee.range * 1.8, -p.QUARTER_PI, p.QUARTER_PI);
+      p.pop();
+    }
 
     // Player health bar above head
     p.push();
