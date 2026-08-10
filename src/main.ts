@@ -300,32 +300,13 @@ const game = new GameApp();
 game.initGame();
 
 const keys = new Set<string>();
-let helpKeyPressedLast = false;
-let dnaKeyPressedLast = false;
 
 window.addEventListener("keydown", (e) => {
   keys.add(e.code);
-
-  if (e.code === "KeyH" && !helpKeyPressedLast) {
-    game.isHelpOpen = !game.isHelpOpen;
-    helpKeyPressedLast = true;
-  }
-  if (e.code === "KeyE" && !dnaKeyPressedLast) {
-    game.isDnaModalOpen = !game.isDnaModalOpen;
-    const modal = document.getElementById("dna-modal");
-    if (modal) modal.style.display = game.isDnaModalOpen ? "flex" : "none";
-    dnaKeyPressedLast = true;
-  }
 });
 
 window.addEventListener("keyup", (e) => {
   keys.delete(e.code);
-  if (e.code === "KeyH") {
-    helpKeyPressedLast = false;
-  }
-  if (e.code === "KeyE") {
-    dnaKeyPressedLast = false;
-  }
 });
 
 window.addEventListener("blur", () => {
