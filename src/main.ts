@@ -206,8 +206,16 @@ window.addEventListener("blur", () => {
 new p5((p: p5) => {
   p.setup = () => {
     const canvas = p.createCanvas(1200, 800);
-    canvas.parent("app");
+    canvas.parent("canvas-container");
     p.frameRate(60);
+
+    // External DOM Help Button listener
+    const helpBtn = document.getElementById("btn-help");
+    if (helpBtn) {
+      helpBtn.addEventListener("click", () => {
+        game.isHelpOpen = !game.isHelpOpen;
+      });
+    }
   };
 
   p.mousePressed = () => {
@@ -218,11 +226,6 @@ new p5((p: p5) => {
     if (game.isHelpOpen) {
       game.isHelpOpen = false;
       return;
-    }
-
-    // Help Button Click Check (Top Left HUD button)
-    if (p.mouseX >= 20 && p.mouseX <= 95 && p.mouseY >= 96 && p.mouseY <= 116) {
-      game.isHelpOpen = !game.isHelpOpen;
     }
   };
 
@@ -350,7 +353,44 @@ new p5((p: p5) => {
       topHealRate,
     };
 
-    // Render pipeline
+    // Update External DOM HUD Sidebar
+    updateDomHud(stats);
+
+    // Render Canvas
     RenderingSystem(game.world, p, game.cave, stats);
   };
 });
+
+function updateDomHud(stats: RenderStats): void {
+  const hpEl = document.getElementById("hud-hp");
+  const hpBarEl = document.getElementById("hud-hp-bar");
+  const ammoEl = document.getElementById("hud-ammo");
+  const waveEl = document.getElementById("hud-wave");
+  const waveTypeEl = document.getElementById("hud-wave-type");
+  const enemiesEl = document.getElementById("hud-enemies");
+  const speedEl = document.getElementById("hud-top-speed");
+  const topHpEl = document.getElementById("hud-top-hp");
+  const aggEl = document.getElementById("hud-top-aggression");
+  const healEl = document.getElementById("hud-top-heal");
+
+  if (hpEl) hpEl.textContent = `${Math.ceil(stats.playerHp)}/${stats.playerMaxHp}`;
+  if (hpBarEl) {
+    const pct = Math.max(0, Math.min(100, (stats.playerHp / stats.playerMaxHp) * 100));
+    hpBarEl.style.width = `${pct}%`;
+  }
+  if (ammoEl) {
+    ammoEl.textContent = stats.isReloading ? "RELOADING..." : `${stats.playerAmmo}/${stats.playerMaxAmmo}`;
+  }
+  if (waveEl) waveEl.textContent = `${stats.wave}`;
+  if (waveTypeEl) {
+    if (stats.wave === 1) waveTypeEl.textContent = "SLASHERS";
+    else if (stats.wave === 2) waveTypeEl.textContent = "SHOOTERS";
+    else if (stats.wave === 3) waveTypeEl.textContent = "TANKS";
+    else waveTypeEl.textContent = "MIXED SWARM";
+  }
+  if (enemiesEl) enemiesEl.textContent = `${stats.enemiesRemaining}`;
+  if (speedEl) speedEl.textContent = stats.topSpeed.toFixed(2);
+  if (topHpEl) topHpEl.textContent = stats.topHealth.toFixed(0);
+  if (aggEl) aggEl.textContent = `${(stats.topAggression * 100).toFixed(0)}%`;
+  if (healEl) healEl.textContent = `${stats.topHealRate.toFixed(2)} HP/f`;
+}

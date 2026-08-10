@@ -37,7 +37,7 @@ export function RenderingSystem(
 
   const fComp = fog ? (fog as FogOfWarComponent) : null;
 
-  // 2. Draw Cave Base Map with Flat High-Contrast Colors (No Outlines)
+  // 2. Draw Cave Base Map with Flat High-Contrast Colors
   for (let x = 0; x < cave.cols; x++) {
     for (let y = 0; y < cave.rows; y++) {
       const isWall = cave.grid[x]![y] === 1;
@@ -73,8 +73,8 @@ export function RenderingSystem(
     }
   }
 
-  // 3. Draw Bullets / Projectiles (Only in visible tiles)
-  world.query(Position, Projectile, Sprite).each((_e, pos, _proj, sprite) => {
+  // 3. Draw Bullets / Projectiles (Visually Distinct Player vs Enemy Bullets)
+  world.query(Position, Projectile, Sprite).each((_e, pos, proj, sprite) => {
     if (fComp) {
       const tx = Math.floor(pos.x / cave.tileSize);
       const ty = Math.floor(pos.y / cave.tileSize);
@@ -82,9 +82,29 @@ export function RenderingSystem(
     }
 
     p.push();
+    p.translate(pos.x, pos.y);
     p.noStroke();
-    p.fill(250, 204, 21); // Solid Bright Yellow
-    p.circle(pos.x, pos.y, sprite.size);
+
+    const isPlayerBullet = proj.owner !== null && world.hasComponent(proj.owner, PlayerTag);
+
+    if (isPlayerBullet) {
+      // Player Bullet: Electric Cyan Sphere with White Core
+      p.fill(6, 182, 212, 120);
+      p.circle(0, 0, sprite.size + 4); // Glow ring
+      p.fill(6, 182, 212);
+      p.circle(0, 0, sprite.size);
+      p.fill(255, 255, 255);
+      p.circle(0, 0, sprite.size * 0.4); // Core
+    } else {
+      // Enemy Bullet: Crimson Plasma Diamond / Star Burst
+      p.fill(244, 63, 94, 140);
+      p.circle(0, 0, sprite.size + 6); // Plasma aura
+      p.fill(239, 68, 68);
+      p.quad(0, -sprite.size, sprite.size * 0.6, 0, 0, sprite.size, -sprite.size * 0.6, 0); // Diamond shape
+      p.fill(255, 200, 200);
+      p.circle(0, 0, sprite.size * 0.3); // Core
+    }
+
     p.pop();
   });
 
@@ -157,61 +177,7 @@ export function RenderingSystem(
     p.pop();
   });
 
-  // 6. Draw HUD Overlay (High contrast text cards)
-  p.push();
-  p.noStroke();
-  p.textSize(14);
-  p.textFont("monospace");
-  p.textAlign(p.LEFT, p.TOP);
-
-  // Top Left HUD
-  p.fill(15, 23, 42, 230);
-  p.rect(10, 10, 240, 115, 4);
-
-  p.fill(6, 182, 212);
-  let waveTypeName = "SLASHERS";
-  if (stats.wave === 2) waveTypeName = "SHOOTERS";
-  else if (stats.wave === 3) waveTypeName = "TANKS";
-  else if (stats.wave >= 4) waveTypeName = "MIXED SWARM";
-
-  p.text(`WAVE: ${stats.wave} (${waveTypeName})`, 20, 18);
-  p.fill(244, 63, 94);
-  p.text(`ENEMIES: ${stats.enemiesRemaining}`, 20, 38);
-  p.fill(34, 197, 94);
-  p.text(`HP: ${Math.ceil(stats.playerHp)}/${stats.playerMaxHp}`, 20, 58);
-
-  // Ammo Display
-  if (stats.isReloading) {
-    p.fill(250, 204, 21);
-    p.text("AMMO: RELOADING...", 20, 78);
-  } else {
-    p.fill(250, 204, 21);
-    p.text(`AMMO: ${stats.playerAmmo}/${stats.playerMaxAmmo}`, 20, 78);
-  }
-
-  // HELP Button [H]
-  p.fill(67, 56, 202);
-  p.rect(20, 96, 75, 20, 3);
-  p.fill(255);
-  p.textSize(11);
-  p.text("[H] HELP", 28, 99);
-
-  // Top Right Genetic Algorithm Traits HUD
-  p.fill(15, 23, 42, 230);
-  p.rect(p.width - 240, 10, 230, 115, 4);
-
-  p.fill(6, 182, 212);
-  p.textSize(14);
-  p.text("DNA EVOLUTION TRAITS", p.width - 230, 18);
-  p.fill(226, 232, 240);
-  p.textSize(12);
-  p.text(`Top Speed: ${stats.topSpeed.toFixed(2)}`, p.width - 230, 38);
-  p.text(`Top Max HP: ${stats.topHealth.toFixed(0)}`, p.width - 230, 54);
-  p.text(`Top Aggression: ${(stats.topAggression * 100).toFixed(0)}%`, p.width - 230, 70);
-  p.text(`Top Heal Rate: ${stats.topHealRate.toFixed(2)} HP/f`, p.width - 230, 86);
-  p.pop();
-
-  // 7. Start Screen Overlay
+  // 6. Start Screen Overlay
   if (stats.isStartScreen) {
     p.push();
     p.fill(5, 7, 12, 245);
@@ -248,7 +214,7 @@ export function RenderingSystem(
     return;
   }
 
-  // 8. Help Screen Overlay Modal
+  // 7. Help Screen Overlay Modal
   if (stats.isHelpOpen) {
     p.push();
     p.fill(5, 7, 12, 235);
@@ -292,7 +258,7 @@ export function RenderingSystem(
     p.pop();
   }
 
-  // 9. Game Over Screen Overlay
+  // 8. Game Over Screen Overlay
   if (stats.isGameOver) {
     p.push();
     p.fill(0, 0, 0, 220);
