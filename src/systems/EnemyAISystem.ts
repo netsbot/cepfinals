@@ -1,5 +1,5 @@
 import { World, Entity } from "../ecs";
-import { Position, Velocity, AI, DNA, Fitness, Health, EnemyType, Projectile, Lifetime, Sprite, Collider, PlayerTag, EnemyTag, EnemyArchetype, AIState } from "../components";
+import { Position, Velocity, AI, DNA, Fitness, Health, EnemyType, Projectile, Lifetime, Sprite, Collider, PlayerTag, EnemyTag, EnemyArchetype, AIState, Visibility, FogState } from "../components";
 
 export function EnemyAISystem(world: World, _dt: number): void {
   // Find player entity
@@ -11,7 +11,7 @@ export function EnemyAISystem(world: World, _dt: number): void {
     playerPos = pos;
   });
 
-  world.query(Position, Health, AI, DNA, Fitness, EnemyTag).each((enemyEntity, pos, health, ai, dna, fitness) => {
+  world.query(Position, Health, AI, DNA, Fitness, Visibility, EnemyTag).each((enemyEntity, pos, health, ai, dna, fitness, vis) => {
     fitness.timeSurvived += 1;
     fitness.distanceTraveled += 0.5; // Approximation per frame tick
 
@@ -48,13 +48,17 @@ export function EnemyAISystem(world: World, _dt: number): void {
       return; // Maintain retreat state until recovered
     }
 
-    if (isLowHp && dist <= dna.visionRadius) {
+    // FOG OF WAR TARGETING RULE:
+    // Enemies detect player ONLY IF player tile is VISIBLE (in line-of-sight) or within close sound range (45px)
+    const isVisibleToEnemy = vis.state === FogState.VISIBLE || dist < 45;
+
+    if (isLowHp && dist <= dna.visionRadius && isVisibleToEnemy) {
       ai.state = AIState.RETREAT;
       ai.target = playerEntity;
       return;
     }
 
-    if (dist <= dna.visionRadius) {
+    if (dist <= dna.visionRadius && isVisibleToEnemy) {
       ai.target = playerEntity;
 
       if (archetype === EnemyArchetype.SHOOTER) {
