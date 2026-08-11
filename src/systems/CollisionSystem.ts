@@ -1,5 +1,5 @@
 import { World, Entity } from "../ecs";
-import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, DNA, Weapon } from "../components";
+import { Position, Health, Collider, Projectile, EnemyTag, PlayerTag, Fitness, AI, AIState, DNA, Weapon } from "../components";
 import { CaveGenerator } from "../world/CaveGenerator";
 
 export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator): void {
@@ -106,7 +106,7 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
   // 3. Enemy Attacks vs Player
   if (playerPos && playerHealth && playerCollider) {
     world.query(Position, Collider, AI, Fitness, EnemyTag).each((_enemyEntity, pos, collider, ai, fitness) => {
-      if (ai.state === "attack") {
+      if (ai.state === AIState.ATTACK) {
         const dx = playerPos!.x - pos.x;
         const dy = playerPos!.y - pos.y;
         const dist = Math.hypot(dx, dy);
@@ -114,14 +114,14 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
         if (dist <= collider.radius + playerCollider!.radius + 5) {
           // Player Dodge Check for Melee Attacks
           if (playerWeapon && Math.random() < playerWeapon.dodgeChance) {
-            ai.state = "chase";
+            ai.state = AIState.CHASE;
             return; // DODGED! Negate melee damage
           }
 
           const damage = 10;
           playerHealth!.current = Math.max(0, playerHealth!.current - damage);
           fitness.damageDealt += damage;
-          ai.state = "chase";
+          ai.state = AIState.CHASE;
         }
       }
     });

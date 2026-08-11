@@ -116,17 +116,17 @@ class GameApp {
 
     // Perk Pool
     const allPerks: Perk[] = [
-      { id: "lifesteal", title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
-      { id: "max_ammo", title: "EXTENDED CLIP", desc: "+2 Max Magazine Capacity & Instant Refill" },
-      { id: "fire_rate", title: "RAPID FIRE", desc: "+25% Ranged Attack Speed (Reduces shot cooldown)" },
-      { id: "damage", title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
-      { id: "speed", title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
-      { id: "vision", title: "EAGLE EYE", desc: "+4 Tiles Vision Radius in Fog of War" },
-      { id: "max_hp", title: "VITALITY", desc: "+40 Max Health & Full Heal" },
-      { id: "melee_damage", title: "HEAVY BLADE", desc: "+40% Melee Slash Damage" },
-      { id: "melee_speed", title: "QUICK SLASH", desc: "-35% Melee Cooldown Speed" },
-      { id: "melee_range", title: "WHIRLWIND ARC", desc: "+40% Melee Range & Wider Cone Arc" },
-      { id: "dodge", title: "SHADOW STEP", desc: "+15% Player Dodge Chance (Negate enemy hits)" },
+      { id: PerkType.LIFESTEAL, title: "VAMPIRIC TOUCH", desc: "+10% Lifesteal (Heal HP on damage dealt)" },
+      { id: PerkType.MAX_AMMO, title: "EXTENDED CLIP", desc: "+2 Max Magazine Capacity & Instant Refill" },
+      { id: PerkType.FIRE_RATE, title: "RAPID FIRE", desc: "+25% Ranged Attack Speed (Reduces shot cooldown)" },
+      { id: PerkType.DAMAGE, title: "HIGH CALIBER", desc: "+30% Bullet Damage" },
+      { id: PerkType.SPEED, title: "SWIFT BOOTS", desc: "+20% Player Movement Speed" },
+      { id: PerkType.VISION, title: "EAGLE EYE", desc: "+4 Tiles Vision Radius in Fog of War" },
+      { id: PerkType.MAX_HP, title: "VITALITY", desc: "+40 Max Health & Full Heal" },
+      { id: PerkType.MELEE_DAMAGE, title: "HEAVY BLADE", desc: "+40% Melee Slash Damage" },
+      { id: PerkType.MELEE_SPEED, title: "QUICK SLASH", desc: "-35% Melee Cooldown Speed" },
+      { id: PerkType.MELEE_RANGE, title: "WHIRLWIND ARC", desc: "+40% Melee Range & Wider Cone Arc" },
+      { id: PerkType.DODGE, title: "SHADOW STEP", desc: "+15% Player Dodge Chance (Negate enemy hits)" },
     ];
 
     // Pick 3 random perks
@@ -161,47 +161,47 @@ class GameApp {
     const melee = this.world.getComponent(this.playerEntity, MeleeAttack);
 
     switch (perk) {
-      case "lifesteal":
+      case PerkType.LIFESTEAL:
         if (wpn) wpn.lifesteal += 0.10;
         break;
-      case "max_ammo":
+      case PerkType.MAX_AMMO:
         if (wpn) {
           wpn.maxAmmo += 2;
           wpn.ammo = wpn.maxAmmo;
           wpn.isReloading = false;
         }
         break;
-      case "fire_rate":
+      case PerkType.FIRE_RATE:
         if (wpn) wpn.fireRate = Math.max(2, Math.floor(wpn.fireRate * 0.75));
         break;
-      case "damage":
+      case PerkType.DAMAGE:
         if (wpn) wpn.damage = Math.floor(wpn.damage * 1.3);
         break;
-      case "speed":
+      case PerkType.SPEED:
         this.playerMoveSpeed *= 1.2;
         break;
-      case "vision":
+      case PerkType.VISION:
         if (vis) vis.radiusTiles += 4;
         break;
-      case "max_hp":
+      case PerkType.MAX_HP:
         if (hp) {
           hp.max += 40;
           hp.current = hp.max;
         }
         break;
-      case "melee_damage":
+      case PerkType.MELEE_DAMAGE:
         if (melee) melee.damage = Math.floor(melee.damage * 1.4);
         break;
-      case "melee_speed":
+      case PerkType.MELEE_SPEED:
         if (melee) melee.maxCooldown = Math.max(20, Math.floor(melee.maxCooldown * 0.65));
         break;
-      case "melee_range":
+      case PerkType.MELEE_RANGE:
         if (melee) {
           melee.range = Math.floor(melee.range * 1.4);
           melee.arcAngle = Math.min(Math.PI * 0.6, melee.arcAngle * 1.35);
         }
         break;
-      case "dodge":
+      case PerkType.DODGE:
         if (wpn) wpn.dodgeChance = Math.min(0.60, wpn.dodgeChance + 0.15);
         break;
     }
@@ -213,22 +213,22 @@ class GameApp {
       const spawn = this.cave.getFreeSpawnPoint();
 
       // Progressive Enemy Introduction per Wave
-      let archetype: EnemyArchetype = "slasher";
+      let archetype: EnemyArchetype = EnemyArchetype.SLASHER;
       if (this.wave === 1) {
-        archetype = "slasher";
+        archetype = EnemyArchetype.SLASHER;
       } else if (this.wave === 2) {
-        archetype = "shooter";
+        archetype = EnemyArchetype.SHOOTER;
       } else if (this.wave === 3) {
-        archetype = "tank";
+        archetype = EnemyArchetype.TANK;
       } else {
         // Wave 4+: Mixed Swarm
         const rand = Math.random();
-        archetype = rand < 0.5 ? "slasher" : rand < 0.85 ? "shooter" : "tank";
+        archetype = rand < 0.5 ? EnemyArchetype.SLASHER : rand < 0.85 ? EnemyArchetype.SHOOTER : EnemyArchetype.TANK;
       }
 
-      const maxHealth = archetype === "tank" ? dna.maxHealth * 2.5 : dna.maxHealth;
-      const speed = archetype === "tank" ? dna.speed * 0.6 : archetype === "slasher" ? dna.speed * 1.2 : dna.speed;
-      const radius = archetype === "tank" ? 16 : 10;
+      const maxHealth = archetype === EnemyArchetype.TANK ? dna.maxHealth * 2.5 : dna.maxHealth;
+      const speed = archetype === EnemyArchetype.TANK ? dna.speed * 0.6 : archetype === EnemyArchetype.SLASHER ? dna.speed * 1.2 : dna.speed;
+      const radius = archetype === EnemyArchetype.TANK ? 16 : 10;
 
       const enemy = this.world.spawn();
       this.world.addComponent(enemy, new Position(spawn.x, spawn.y));
@@ -437,17 +437,17 @@ new p5((p: p5) => {
       aliveEnemies++;
       const arch = enemyType.archetype;
 
-      if (arch === "slasher") {
+      if (arch === EnemyArchetype.SLASHER) {
         if (dna.speed > slasherStats.maxSpeed) slasherStats.maxSpeed = dna.speed;
         if (dna.aggression > slasherStats.maxAgg) slasherStats.maxAgg = dna.aggression;
         if (dna.healRate > slasherStats.maxHeal) slasherStats.maxHeal = dna.healRate;
         if (dna.maxHealth > slasherStats.maxHp) slasherStats.maxHp = dna.maxHealth;
-      } else if (arch === "shooter") {
+      } else if (arch === EnemyArchetype.SHOOTER) {
         if (dna.speed > shooterStats.maxSpeed) shooterStats.maxSpeed = dna.speed;
         if (dna.attackCooldown < shooterStats.minCooldown) shooterStats.minCooldown = dna.attackCooldown;
         if (dna.visionRadius > shooterStats.maxVision) shooterStats.maxVision = dna.visionRadius;
         if (dna.dodgeChance > shooterStats.maxDodge) shooterStats.maxDodge = dna.dodgeChance;
-      } else if (arch === "tank") {
+      } else if (arch === EnemyArchetype.TANK) {
         if (dna.maxHealth > tankStats.maxHp) tankStats.maxHp = dna.maxHealth;
         if (dna.dodgeChance > tankStats.maxDodge) tankStats.maxDodge = dna.dodgeChance;
         if (dna.visionRadius > tankStats.maxVision) tankStats.maxVision = dna.visionRadius;

@@ -1,5 +1,5 @@
 import { World, Entity } from "../ecs";
-import { Position, Velocity, AI, DNA, Fitness, Health, EnemyType, Projectile, Lifetime, Sprite, Collider, PlayerTag, EnemyTag } from "../components";
+import { Position, Velocity, AI, DNA, Fitness, Health, EnemyType, Projectile, Lifetime, Sprite, Collider, PlayerTag, EnemyTag, EnemyArchetype, AIState } from "../components";
 
 export function EnemyAISystem(world: World, _dt: number): void {
   // Find player entity
@@ -16,7 +16,7 @@ export function EnemyAISystem(world: World, _dt: number): void {
     fitness.distanceTraveled += 0.5; // Approximation per frame tick
 
     const enemyTypeComp = world.getComponent(enemyEntity, EnemyType);
-    const archetype = enemyTypeComp ? enemyTypeComp.archetype : "slasher";
+    const archetype = enemyTypeComp ? enemyTypeComp.archetype : EnemyArchetype.SLASHER;
 
     if (ai.cooldownTimer > 0) {
       ai.cooldownTimer--;
@@ -30,7 +30,7 @@ export function EnemyAISystem(world: World, _dt: number): void {
     }
 
     if (playerEntity === null || !playerPos) {
-      ai.state = "wander";
+      ai.state = AIState.WANDER;
       ai.target = null;
       return;
     }
@@ -43,13 +43,13 @@ export function EnemyAISystem(world: World, _dt: number): void {
     const isLowHp = health.current < health.max * 0.35;
     const isHealedEnough = health.current > health.max * 0.7;
 
-    if (ai.state === "retreat" && !isHealedEnough) {
+    if (ai.state === AIState.RETREAT && !isHealedEnough) {
       ai.target = playerEntity;
       return; // Maintain retreat state until recovered
     }
 
     if (isLowHp && dist <= dna.visionRadius) {
-      ai.state = "retreat";
+      ai.state = AIState.RETREAT;
       ai.target = playerEntity;
       return;
     }
@@ -57,14 +57,14 @@ export function EnemyAISystem(world: World, _dt: number): void {
     if (dist <= dna.visionRadius) {
       ai.target = playerEntity;
 
-      if (archetype === "shooter") {
+      if (archetype === EnemyArchetype.SHOOTER) {
         // Shooter (ADC): Strict Kiting & Max Firing Range Spacing
         if (dist > 200) {
-          ai.state = "chase";
+          ai.state = AIState.CHASE;
         } else if (dist < 130) {
-          ai.state = "flee"; // Back up to maintain ADC kiting distance
+          ai.state = AIState.FLEE; // Back up to maintain ADC kiting distance
         } else {
-          ai.state = "idle";
+          ai.state = AIState.IDLE;
         }
 
         // Shoot projectile at player
@@ -88,28 +88,28 @@ export function EnemyAISystem(world: World, _dt: number): void {
           world.addComponent(bullet, new Lifetime(140, 140));
           world.addComponent(bullet, new Sprite("#f43f5e", 8, "circle"));
         }
-      } else if (archetype === "tank") {
+      } else if (archetype === EnemyArchetype.TANK) {
         // Tank (Roamer / Body Blocker): Position between Player and Shooter allies to soak hits!
-        ai.state = "chase";
+        ai.state = AIState.CHASE;
 
         // Melee punch if close
         if (dist <= 30 && ai.cooldownTimer === 0) {
-          ai.state = "attack";
+          ai.state = AIState.ATTACK;
           ai.cooldownTimer = dna.attackCooldown;
           fitness.attackCount++;
         }
       } else {
         // Slasher (Top Laner): Relentless 1v1 aggressive rushdown
         if (dist <= 25 && ai.cooldownTimer === 0) {
-          ai.state = "attack";
+          ai.state = AIState.ATTACK;
           ai.cooldownTimer = dna.attackCooldown;
           fitness.attackCount++;
         } else {
-          ai.state = "chase";
+          ai.state = AIState.CHASE;
         }
       }
     } else {
-      ai.state = "wander";
+      ai.state = AIState.WANDER;
       ai.target = null;
     }
   });

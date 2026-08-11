@@ -1,10 +1,15 @@
+export enum TileType {
+  FLOOR = 0,
+  WALL = 1,
+}
+
 export class CaveGenerator {
   public cols: number;
   public rows: number;
   public tileSize: number;
   public grid: number[][];
 
-  constructor(cols: number = 60, rows: number = 40, tileSize: number = 20) {
+  constructor(cols: number = 40, rows: number = 30, tileSize: number = 20) {
     this.cols = cols;
     this.rows = rows;
     this.tileSize = tileSize;
@@ -16,9 +21,9 @@ export class CaveGenerator {
     this.grid = Array.from({ length: this.cols }, (_, x) =>
       Array.from({ length: this.rows }, (_, y) => {
         if (x === 0 || x === this.cols - 1 || y === 0 || y === this.rows - 1) {
-          return 1; // Border walls
+          return TileType.WALL; // Border walls
         }
-        return Math.random() < fillPercent ? 1 : 0;
+        return Math.random() < fillPercent ? TileType.WALL : TileType.FLOOR;
       })
     );
 

@@ -1,7 +1,7 @@
 import p5 from "p5";
 import { World } from "../ecs";
-import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag, EnemyType, MeleeAttack } from "../components";
-import { CaveGenerator } from "../world/CaveGenerator";
+import { Position, Health, Sprite, DNA, PlayerTag, EnemyTag, Projectile, FogOfWarComponent, Visibility, FogTag, EnemyType, MeleeAttack, FogState, EnemyArchetype } from "../components";
+import { CaveGenerator, TileType } from "../world/CaveGenerator";
 
 export interface RenderStats {
   wave: number;
@@ -40,16 +40,16 @@ export function RenderingSystem(
   // 2. Draw Cave Base Map with Flat High-Contrast Colors
   for (let x = 0; x < cave.cols; x++) {
     for (let y = 0; y < cave.rows; y++) {
-      const isWall = cave.grid[x]![y] === 1;
+      const isWall = cave.grid[x]![y] === TileType.WALL;
       const posX = x * cave.tileSize;
       const posY = y * cave.tileSize;
-      const fogState = fComp ? fComp.get(x, y) : 2; // 0: unexplored, 1: explored, 2: visible
+      const fogState = fComp ? fComp.get(x, y) : FogState.VISIBLE;
 
-      if (fogState === 0) {
+      if (fogState === FogState.UNEXPLORED) {
         // UNEXPLORED: Pitch black
         p.fill(0, 0, 0);
         p.rect(posX, posY, cave.tileSize, cave.tileSize);
-      } else if (fogState === 1) {
+      } else if (fogState === FogState.EXPLORED) {
         // EXPLORED (Memory Fog): Muted dim colors
         if (isWall) {
           p.fill(46, 16, 101); // Dark muted purple wall
@@ -78,7 +78,7 @@ export function RenderingSystem(
     if (fComp) {
       const tx = Math.floor(pos.x / cave.tileSize);
       const ty = Math.floor(pos.y / cave.tileSize);
-      if (fComp.get(tx, ty) !== 2) return; // Hide bullet in fog
+      if (fComp.get(tx, ty) !== FogState.VISIBLE) return; // Hide bullet in fog
     }
 
     p.push();
@@ -108,22 +108,22 @@ export function RenderingSystem(
     p.pop();
   });
 
-  // 4. Draw Enemies (ONLY if Visibility === "visible")
+  // 4. Draw Enemies (ONLY if Visibility === FogState.VISIBLE)
   world.query(Position, Health, Sprite, DNA, Visibility, EnemyTag).each((enemyEntity, pos, health, sprite, dna, vis) => {
-    if (vis.state !== "visible") return; // Hidden in fog of war!
+    if (vis.state !== FogState.VISIBLE) return; // Hidden in fog of war!
 
     const enemyTypeComp = world.getComponent(enemyEntity, EnemyType);
-    const archetype = enemyTypeComp ? enemyTypeComp.archetype : "slasher";
+    const archetype = enemyTypeComp ? enemyTypeComp.archetype : EnemyArchetype.SLASHER;
 
     p.push();
     p.translate(pos.x, pos.y);
     p.noStroke();
 
-    if (archetype === "shooter") {
+    if (archetype === EnemyArchetype.SHOOTER) {
       // Purple Diamond for Shooter
       p.fill(168, 85, 247);
       p.quad(0, -sprite.size, sprite.size * 0.8, 0, 0, sprite.size, -sprite.size * 0.8, 0);
-    } else if (archetype === "tank") {
+    } else if (archetype === EnemyArchetype.TANK) {
       // Large Orange Square for Tank
       p.fill(249, 115, 22);
       p.rectMode(p.CENTER);

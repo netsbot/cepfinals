@@ -1,6 +1,6 @@
 import { World } from "../ecs";
-import { Position, Vision, Visibility, FogOfWarComponent, FogTag } from "../components";
-import { CaveGenerator } from "../world/CaveGenerator";
+import { Position, Vision, Visibility, FogOfWarComponent, FogTag, FogState } from "../components";
+import { CaveGenerator, TileType } from "../world/CaveGenerator";
 
 export function FogOfWarSystem(world: World, _dt: number, cave: CaveGenerator): void {
   // 1. Get Fog Entity
@@ -12,10 +12,10 @@ export function FogOfWarSystem(world: World, _dt: number, cave: CaveGenerator): 
   if (!fogComp) return;
   const fog = fogComp as FogOfWarComponent;
 
-  // 2. Demote current VISIBLE (2) -> EXPLORED (1)
+  // 2. Demote current VISIBLE -> EXPLORED
   for (let i = 0; i < fog.grid.length; i++) {
-    if (fog.grid[i] === 2) {
-      fog.grid[i] = 1;
+    if (fog.grid[i] === FogState.VISIBLE) {
+      fog.grid[i] = FogState.EXPLORED;
     }
   }
 
@@ -25,7 +25,7 @@ export function FogOfWarSystem(world: World, _dt: number, cave: CaveGenerator): 
     const startTileY = Math.floor(pos.y / cave.tileSize);
 
     // Always reveal player cell
-    fog.set(startTileX, startTileY, 2);
+    fog.set(startTileX, startTileY, FogState.VISIBLE);
 
     const rayCount = 180;
     for (let i = 0; i < rayCount; i++) {
@@ -39,10 +39,10 @@ export function FogOfWarSystem(world: World, _dt: number, cave: CaveGenerator): 
 
         if (tx < 0 || tx >= cave.cols || ty < 0 || ty >= cave.rows) break;
 
-        fog.set(tx, ty, 2);
+        fog.set(tx, ty, FogState.VISIBLE);
 
         // Ray blocked by cave wall
-        if (cave.grid[tx]![ty] === 1) break;
+        if (cave.grid[tx]![ty] === TileType.WALL) break;
       }
     }
   });
@@ -51,14 +51,6 @@ export function FogOfWarSystem(world: World, _dt: number, cave: CaveGenerator): 
   world.query(Position, Visibility).each((_e, pos, vis) => {
     const tileX = Math.floor(pos.x / cave.tileSize);
     const tileY = Math.floor(pos.y / cave.tileSize);
-    const fogState = fog.get(tileX, tileY);
-
-    if (fogState === 2) {
-      vis.state = "visible";
-    } else if (fogState === 1) {
-      vis.state = "explored";
-    } else {
-      vis.state = "unexplored";
-    }
+    vis.state = fog.get(tileX, tileY);
   });
 }

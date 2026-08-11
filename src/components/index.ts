@@ -53,8 +53,8 @@ export class Fitness {
   public distanceTraveled: number = 0;
   public hpHealed: number = 0;
 
-  public computeScore(archetype: EnemyArchetype = "slasher"): number {
-    if (archetype === "shooter") {
+  public computeScore(archetype: EnemyArchetype = EnemyArchetype.SLASHER): number {
+    if (archetype === EnemyArchetype.SHOOTER) {
       // Shooter (ADC): Value Ranged DPS, High Attack Count, and Kiting Distance
       return (
         this.damageDealt * 4.0 +
@@ -62,7 +62,7 @@ export class Fitness {
         this.distanceTraveled * 1.2 +
         this.timeSurvived * 1.0
       );
-    } else if (archetype === "tank") {
+    } else if (archetype === EnemyArchetype.TANK) {
       // Tank (Roamer): Value Survival Duration, Damage Tanked, and Roaming Coverage
       return (
         this.timeSurvived * 2.5 +
@@ -80,14 +80,6 @@ export class Fitness {
       );
     }
   }
-}
-
-export type AIState = "idle" | "chase" | "attack" | "flee" | "retreat" | "wander";
-
-export class AI {
-  public state: AIState = "idle";
-  public target: Entity | null = null;
-  public cooldownTimer: number = 0;
 }
 
 export class Steering {
@@ -150,36 +142,73 @@ export class Sprite {
   ) {}
 }
 
-export class Vision {
-  constructor(public radiusTiles: number = 10) {}
+export enum FogState {
+  UNEXPLORED = 0,
+  EXPLORED = 1,
+  VISIBLE = 2,
 }
 
-export type VisibilityState = "unexplored" | "explored" | "visible";
+export enum EnemyArchetype {
+  SLASHER = "slasher",
+  SHOOTER = "shooter",
+  TANK = "tank",
+}
+
+export enum PerkType {
+  LIFESTEAL = "lifesteal",
+  MAX_AMMO = "max_ammo",
+  FIRE_RATE = "fire_rate",
+  DAMAGE = "damage",
+  SPEED = "speed",
+  VISION = "vision",
+  MAX_HP = "max_hp",
+  MELEE_DAMAGE = "melee_damage",
+  MELEE_SPEED = "melee_speed",
+  MELEE_RANGE = "melee_range",
+  DODGE = "dodge",
+}
+
+export enum AIState {
+  IDLE = "idle",
+  CHASE = "chase",
+  ATTACK = "attack",
+  FLEE = "flee",
+  RETREAT = "retreat",
+  WANDER = "wander",
+}
+
+export class AI {
+  public state: AIState = AIState.WANDER;
+  public target: Entity | null = null;
+  public cooldownTimer: number = 0;
+}
+
+export class Vision {
+  constructor(public radiusTiles: number = 8) {}
+}
 
 export class Visibility {
-  constructor(public state: VisibilityState = "unexplored") {}
+  constructor(public state: FogState = FogState.UNEXPLORED) {}
 }
 
 export class FogOfWarComponent {
   public grid: Uint8Array;
 
-  constructor(public cols: number = 60, public rows: number = 40) {
+  constructor(public cols: number = 40, public rows: number = 30) {
     this.grid = new Uint8Array(cols * rows);
   }
 
-  public get(x: number, y: number): number {
-    if (x < 0 || x >= this.cols || y < 0 || y >= this.rows) return 0;
-    return this.grid[x + y * this.cols] ?? 0;
+  public get(x: number, y: number): FogState {
+    if (x < 0 || x >= this.cols || y < 0 || y >= this.rows) return FogState.UNEXPLORED;
+    return (this.grid[x + y * this.cols] ?? FogState.UNEXPLORED) as FogState;
   }
 
-  public set(x: number, y: number, value: number): void {
+  public set(x: number, y: number, value: FogState): void {
     if (x >= 0 && x < this.cols && y >= 0 && y < this.rows) {
       this.grid[x + y * this.cols] = value;
     }
   }
 }
-
-export type EnemyArchetype = "slasher" | "shooter" | "tank";
 
 export class PlayerXp {
   public level: number = 1;
@@ -198,19 +227,6 @@ export class PlayerXp {
   }
 }
 
-export type PerkType =
-  | "lifesteal"
-  | "max_ammo"
-  | "fire_rate"
-  | "damage"
-  | "speed"
-  | "vision"
-  | "max_hp"
-  | "melee_damage"
-  | "melee_speed"
-  | "melee_range"
-  | "dodge";
-
 export interface Perk {
   id: PerkType;
   title: string;
@@ -218,7 +234,7 @@ export interface Perk {
 }
 
 export class EnemyType {
-  constructor(public archetype: EnemyArchetype = "slasher") {}
+  constructor(public archetype: EnemyArchetype = EnemyArchetype.SLASHER) {}
 }
 
 export class PlayerTag {}

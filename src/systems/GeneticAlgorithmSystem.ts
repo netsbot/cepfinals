@@ -4,7 +4,7 @@ export class GeneticAlgorithmSystem {
   public static evolvePopulation(
     parentDNAs: { dna: EnemyDNA; score: number; archetype: EnemyArchetype }[],
     populationSize: number,
-    targetArchetype: EnemyArchetype = "slasher"
+    targetArchetype: EnemyArchetype = EnemyArchetype.SLASHER
   ): DNA[] {
     // Filter parents by matching archetype if available, or fall back to full pool
     const matchingParents = parentDNAs.filter((p) => p.archetype === targetArchetype);
@@ -54,7 +54,7 @@ export class GeneticAlgorithmSystem {
 
   private static mutate(dna: DNA, archetype: EnemyArchetype, mutationRate: number = 0.15): void {
     // Role-Biased Genetic Evolution
-    if (archetype === "shooter") {
+    if (archetype === EnemyArchetype.SHOOTER) {
       // Shooter (ADC): Priority on Attack Speed (lower cooldown), Kiting Speed, and Vision
       if (Math.random() < mutationRate * 1.8) {
         dna.attackCooldown = Math.max(12, Math.min(60, dna.attackCooldown + Math.floor(Math.random() * 8 - 5)));
@@ -65,7 +65,7 @@ export class GeneticAlgorithmSystem {
       if (Math.random() < mutationRate * 1.4) {
         dna.visionRadius = Math.max(180, Math.min(380, dna.visionRadius + (Math.random() * 50 - 20)));
       }
-    } else if (archetype === "tank") {
+    } else if (archetype === EnemyArchetype.TANK) {
       // Tank (Roamer): Priority on Max Health, Body Size, Dodge Chance, and Wide Patrol Vision
       if (Math.random() < mutationRate * 1.8) {
         dna.maxHealth = Math.max(80, Math.min(300, dna.maxHealth + Math.floor(Math.random() * 40 - 15)));
