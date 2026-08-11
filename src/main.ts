@@ -70,7 +70,7 @@ class GameApp {
     this.world.addComponent(this.fogEntity, new FogOfWarComponent(40, 30));
     this.world.addComponent(this.fogEntity, new FogTag());
 
-    // 3. Spawn Player with Vision Component, PlayerXp & MeleeAttack
+    // 3. Spawn Player with Vision Component (8 tile radius for compact fog-of-war), PlayerXp & MeleeAttack
     const playerSpawn = this.cave.getFreeSpawnPoint();
     this.playerEntity = this.world.spawn();
     this.world.addComponent(this.playerEntity, new Position(playerSpawn.x, playerSpawn.y));
@@ -78,7 +78,7 @@ class GameApp {
     this.world.addComponent(this.playerEntity, new Health(100, 100));
     this.world.addComponent(this.playerEntity, new Collider(12, false));
     this.world.addComponent(this.playerEntity, new Weapon());
-    this.world.addComponent(this.playerEntity, new Vision(12)); // 12 tile vision radius
+    this.world.addComponent(this.playerEntity, new Vision(8)); // 8 tile vision radius (compact fog of war)
     this.world.addComponent(this.playerEntity, new PlayerXp());
     this.world.addComponent(this.playerEntity, new MeleeAttack());
     this.world.addComponent(this.playerEntity, new Sprite("#38bdf8", 20, "circle"));
