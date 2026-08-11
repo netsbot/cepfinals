@@ -110,6 +110,7 @@ export class Weapon {
   public cooldown: number = 0;
   public bulletSpeed: number = 8;
   public lifesteal: number = 0.20; // 20% damage converted to player HP
+  public dodgeChance: number = 0.0; // 0% baseline dodge chance
   public ammo: number = 5;
   public maxAmmo: number = 5;
   public reloadTime: number = 90; // 90 frames = 1.5s reload duration
@@ -207,7 +208,8 @@ export type PerkType =
   | "max_hp"
   | "melee_damage"
   | "melee_speed"
-  | "melee_range";
+  | "melee_range"
+  | "dodge";
 
 export interface Perk {
   id: PerkType;

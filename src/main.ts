@@ -126,6 +126,7 @@ class GameApp {
       { id: "melee_damage", title: "HEAVY BLADE", desc: "+40% Melee Slash Damage" },
       { id: "melee_speed", title: "QUICK SLASH", desc: "-35% Melee Cooldown Speed" },
       { id: "melee_range", title: "WHIRLWIND ARC", desc: "+40% Melee Range & Wider Cone Arc" },
+      { id: "dodge", title: "SHADOW STEP", desc: "+15% Player Dodge Chance (Negate enemy hits)" },
     ];
 
     // Pick 3 random perks
@@ -199,6 +200,9 @@ class GameApp {
           melee.range = Math.floor(melee.range * 1.4);
           melee.arcAngle = Math.min(Math.PI * 0.6, melee.arcAngle * 1.35);
         }
+        break;
+      case "dodge":
+        if (wpn) wpn.dodgeChance = Math.min(0.60, wpn.dodgeChance + 0.15);
         break;
     }
   }
@@ -462,6 +466,7 @@ new p5((p: p5) => {
     let playerMaxAmmo = 5;
     let isReloading = false;
     let playerLifesteal = 0.20;
+    let playerDodgeChance = 0.0;
     let playerLevel = 1;
 
     if (game.playerEntity !== null && game.world.isAlive(game.playerEntity)) {
@@ -485,6 +490,7 @@ new p5((p: p5) => {
         playerMaxAmmo = wpn.maxAmmo;
         isReloading = wpn.isReloading;
         playerLifesteal = wpn.lifesteal;
+        playerDodgeChance = wpn.dodgeChance;
       }
       if (xp) {
         playerLevel = xp.level;
@@ -509,7 +515,7 @@ new p5((p: p5) => {
     };
 
     // Update External DOM HUD Sidebar & DNA Lab Split Metrics
-    updateDomHud(stats, playerLevel, playerLevel - 1, playerLifesteal);
+    updateDomHud(stats, playerLevel, playerLevel - 1, playerLifesteal, playerDodgeChance);
     updateDnaModalHud(slasherStats, shooterStats, tankStats);
 
     // Render Canvas
@@ -521,7 +527,8 @@ function updateDomHud(
   stats: RenderStats,
   level: number,
   perksEarned: number,
-  lifesteal: number
+  lifesteal: number,
+  dodge: number
 ): void {
   const levelEl = document.getElementById("hud-level");
   const perksEl = document.getElementById("hud-perks");
@@ -529,6 +536,7 @@ function updateDomHud(
   const hpBarEl = document.getElementById("hud-hp-bar");
   const ammoEl = document.getElementById("hud-ammo");
   const lifestealEl = document.getElementById("hud-lifesteal");
+  const dodgeEl = document.getElementById("hud-dodge");
   const waveEl = document.getElementById("hud-wave");
   const waveTypeEl = document.getElementById("hud-wave-type");
   const enemiesEl = document.getElementById("hud-enemies");
@@ -545,6 +553,9 @@ function updateDomHud(
   }
   if (lifestealEl) {
     lifestealEl.textContent = `${(lifesteal * 100).toFixed(0)}%`;
+  }
+  if (dodgeEl) {
+    dodgeEl.textContent = `${(dodge * 100).toFixed(0)}%`;
   }
   if (waveEl) waveEl.textContent = `${stats.wave}`;
   if (waveTypeEl) {

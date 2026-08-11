@@ -85,6 +85,12 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
       const dist = Math.hypot(dx, dy);
 
       if (dist < playerCollider!.radius + bCollider.radius) {
+        // Player Dodge Check
+        if (playerWeapon && Math.random() < playerWeapon.dodgeChance) {
+          world.despawn(bulletEntity);
+          return; // DODGED! Negate damage
+        }
+
         playerHealth!.current = Math.max(0, playerHealth!.current - proj.damage);
         world.despawn(bulletEntity);
 
@@ -106,6 +112,12 @@ export function CollisionSystem(world: World, _dt: number, cave: CaveGenerator):
         const dist = Math.hypot(dx, dy);
 
         if (dist <= collider.radius + playerCollider!.radius + 5) {
+          // Player Dodge Check for Melee Attacks
+          if (playerWeapon && Math.random() < playerWeapon.dodgeChance) {
+            ai.state = "chase";
+            return; // DODGED! Negate melee damage
+          }
+
           const damage = 10;
           playerHealth!.current = Math.max(0, playerHealth!.current - damage);
           fitness.damageDealt += damage;
